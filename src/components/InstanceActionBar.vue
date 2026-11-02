@@ -52,20 +52,6 @@
                 </TooltipWrapper>
             </div>
             <TooltipWrapper
-                v-if="instanceInfoState.canSendAnnouncement"
-                side="top"
-                :content="t('dialog.user.info.instance_announcement_tooltip')">
-                <Button
-                    class="rounded-full h-6 w-6 text-xs text-muted-foreground hover:text-foreground"
-                    :style="buttonStyle"
-                    size="icon-sm"
-                    variant="outline"
-                    :ariaLabel="t('dialog.user.info.instance_announcement_tooltip')"
-                    @click="instanceAnnouncementDialogVisible = true">
-                    <Megaphone class="h-4 w-4" />
-                </Button>
-            </TooltipWrapper>
-            <TooltipWrapper
                 v-if="instanceInfoState.canLinkCalendarEvent"
                 side="top"
                 :content="t('dialog.user.info.instance_calendar_link_tooltip')">
@@ -150,29 +136,6 @@
                             {{ t('dialog.user.info.instance_disabled_content') }}
                             {{ instanceInfoState.disabledContentSettings }}
                         </span>
-
-                        <div class="flex gap-2">
-                            <Button
-                                v-if="!instance?.closedAt && instanceInfoState.canCloseInstance"
-                                class="w-12 h-6 text-xs hover:text-muted-foreground"
-                                size="icon-sm"
-                                variant="destructive"
-                                :title="t('dialog.user.info.close_instance')"
-                                :ariaLabel="t('dialog.user.info.close_instance')"
-                                @click="closeInstance(resolvedInstanceLocation)">
-                                <PowerIcon class="h-4 w-4" />
-                            </Button>
-                            <Button
-                                v-if="instanceInfoState.canRenameInstance"
-                                class="w-12 h-6 text-xs hover:text-muted-foreground"
-                                size="icon-sm"
-                                variant="secondary"
-                                :title="t('dialog.user.info.rename_instance')"
-                                :ariaLabel="t('dialog.user.info.rename_instance')"
-                                @click="renameInstance(resolvedInstanceLocation)">
-                                <Pencil class="h-4 w-4" />
-                            </Button>
-                        </div>
                     </div>
                 </template>
                 <div :class="cn('flex items-center gap-0.5', !instance?.hasCapacityForYou ? 'text-red-500' : null)">
@@ -295,10 +258,6 @@
                 </TooltipWrapper>
             </template>
         </div>
-        <InstanceAnnouncementDialog
-            v-if="instanceAnnouncementDialogVisible"
-            v-model:open="instanceAnnouncementDialogVisible"
-            :location="resolvedInstanceLocation" />
         <InstanceCalendarLinkDialog
             v-if="instanceCalendarLinkDialogVisible"
             v-model:open="instanceCalendarLinkDialogVisible"
@@ -316,9 +275,6 @@
         LogIn,
         Mail,
         MapPin,
-        Megaphone,
-        Pencil,
-        PowerIcon,
         RefreshCw,
         UsersRound,
         SquareStack,
@@ -342,13 +298,11 @@
         useInviteStore,
         useLaunchStore,
         useLocationStore,
-        useModalStore,
         useUserStore
     } from '../stores';
     import { formatSeconds, hasGroupPermission, languageClass, parseLocation } from '../shared/utils';
     import { useInviteChecks } from '../composables/useInviteChecks';
-    import { instanceRequest, miscRequest, queryRequest } from '../api';
-    import InstanceAnnouncementDialog from './dialogs/InstanceAnnouncementDialog.vue';
+    import { instanceRequest, queryRequest } from '../api';
     import InstanceCalendarLinkDialog from './dialogs/InstanceCalendarLinkDialog.vue';
     import GroupCalendarEventDetails from '../views/Tools/components/GroupCalendarEventDetails.vue';
 
@@ -362,7 +316,6 @@
     const userStore = useUserStore();
     const groupStore = useGroupStore();
     const instanceStore = useInstanceStore();
-    const modalStore = useModalStore();
     const launchStore = useLaunchStore();
     const inviteStore = useInviteStore();
 
@@ -471,7 +424,6 @@
     const showHistoryButton = computed(() => props.showHistory && typeof props.onHistory === 'function');
 
     const lastJoin = ref(null);
-    const instanceAnnouncementDialogVisible = ref(false);
     const instanceCalendarLinkDialogVisible = ref(false);
     const showLastJoinIndicator = computed(() => props.showLastJoin && lastJoin.value);
     const hasInstanceMetadata = computed(() => {
@@ -493,9 +445,6 @@
 
     const instanceInfoState = reactive({
         isValidInstance: false,
-        canCloseInstance: false,
-        canRenameInstance: false,
-        canSendAnnouncement: false,
         canLinkCalendarEvent: false,
         isAgeGated: false,
         isRoleRestricted: false,
@@ -592,9 +541,6 @@
     const parseInstanceInfo = () => {
         Object.assign(instanceInfoState, {
             isValidInstance: false,
-            canCloseInstance: false,
-            canRenameInstance: false,
-            canSendAnnouncement: false,
             canLinkCalendarEvent: false,
             isAgeGated: false,
             isRoleRestricted: false,
@@ -604,16 +550,8 @@
         if (!resolvedInstanceLocation.value || !props.instance || Object.keys(props.instance).length === 0) return;
 
         instanceInfoState.isValidInstance = true;
-        if (props.instance.ownerId === userStore.currentUser.id) {
-            instanceInfoState.canCloseInstance = true;
-            instanceInfoState.canRenameInstance = userStore.isLocalUserVrcPlusSupporter;
-        } else if (props.instance.ownerId?.startsWith('grp_')) {
+        if (props.instance.ownerId?.startsWith('grp_')) {
             const group = groupStore.cachedGroups.get(props.instance.ownerId);
-            instanceInfoState.canCloseInstance = hasGroupPermission(group, 'group-instance-moderate');
-            instanceInfoState.canRenameInstance = hasGroupPermission(group, 'group-instance-manage');
-            instanceInfoState.canSendAnnouncement =
-                hasGroupPermission(group, 'group-instance-announcement-create') &&
-                resolvedInstanceLocation.value === locationStore.lastLocation.location;
             instanceInfoState.canLinkCalendarEvent =
                 hasGroupPermission(group, 'group-instance-manage') &&
                 hasGroupPermission(group, 'group-instance-calendar-link');
@@ -624,47 +562,6 @@
         if (props.instance.$disabledContentSettings?.length) {
             instanceInfoState.disabledContentSettings = props.instance.$disabledContentSettings.join(', ');
         }
-    };
-
-    const refreshInstance = (location) => {
-        const L = parseLocation(location);
-        return instanceRequest.getInstance({ worldId: L.worldId, instanceId: L.instanceId });
-    };
-
-    const closeInstance = (location) => {
-        modalStore
-            .confirm({
-                description: t('confirm.close_instance'),
-                title: t('confirm.title')
-            })
-            .then(async ({ ok }) => {
-                if (!ok) return;
-                const args = await miscRequest.closeInstance({ location, hardClose: false });
-                if (args.json) {
-                    toast.success(t('message.instance.closed'));
-                    instanceStore.applyInstance(args.json);
-                    await refreshInstance(location);
-                }
-            })
-            .catch(() => {});
-    };
-
-    const renameInstance = (location) => {
-        modalStore
-            .prompt({
-                title: t('prompt.rename_instance.header'),
-                description: t('prompt.rename_instance.description'),
-                inputValue: props.instance?.displayName ?? ''
-            })
-            .then(async ({ ok, value }) => {
-                if (!ok) return;
-                const displayName = value.trim() || null;
-                if (displayName === (props.instance?.displayName ?? null)) return;
-                await instanceRequest.updateInstance({ location, displayName });
-                toast.success(t('message.instance.renamed'));
-                await refreshInstance(location);
-            })
-            .catch(() => {});
     };
 
     const calendarPopoverOpen = ref(false);

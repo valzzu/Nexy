@@ -249,14 +249,6 @@ describe('sanitizeLayout', () => {
         expect(result.find((e) => e.type === 'item' && e.key === 'tools')).toBeUndefined();
     });
 
-    test('converts legacy "charts" item to charts folder', () => {
-        const layout = [{ type: 'item', key: 'charts' }];
-        const result = runSanitize(layout);
-        const chartsFolder = result.find((e) => e.type === 'folder' && e.id === 'default-folder-charts');
-        expect(chartsFolder).toBeDefined();
-        expect(chartsFolder.items).toEqual(['charts-instance', 'charts-mutual', 'charts-hot-worlds']);
-    });
-
     test('skips empty folders', () => {
         const layout = [
             {

@@ -67,10 +67,6 @@ export const useAppearanceSettingsStore = defineStore(
         const appFontFamily = ref('inter');
         const customFontFamily = ref('');
         const appCjkFontPack = ref(APP_CJK_FONT_PACK_DEFAULT_KEY);
-        const displayVRCProfileThemes = ref(false);
-        const displayVRCProfileBackgrounds = ref(false);
-        const profileBackgroundOpacity = ref(0.5);
-        const displayVRCProfileCosmetics = ref(false);
         const hideNicknames = ref(false);
         const showInstanceIdInLocation = ref(false);
         const isAgeGatedInstancesVisible = ref(false);
@@ -93,8 +89,6 @@ export const useAppearanceSettingsStore = defineStore(
         const isSidebarDivideByFriendGroup = ref(false);
         const sidebarFavoriteGroups = ref([]);
         const sidebarFavoriteGroupOrder = ref([]);
-        const sidebarCosmetics = ref(false);
-        const hideUserNotes = ref(false);
         const hideUserMemos = ref(false);
         const hideUnfriends = ref(false);
         const randomUserColours = ref(false);
@@ -153,10 +147,6 @@ export const useAppearanceSettingsStore = defineStore(
             const fallbackDarkTheme = THEME_CONFIG[initThemeMode]?.isDark === true ? initThemeMode : 'dark';
             const [
                 appLanguageConfig,
-                displayVRCProfileThemesConfig,
-                displayVRCProfileBackgroundsConfig,
-                profileBackgroundOpacityConfig,
-                displayVRCProfileCosmeticsConfig,
                 hideNicknamesConfig,
                 showInstanceIdInLocationConfig,
                 isAgeGatedInstancesVisibleConfig,
@@ -176,8 +166,6 @@ export const useAppearanceSettingsStore = defineStore(
                 isSidebarDivideByFriendGroupConfig,
                 sidebarFavoriteGroupsConfig,
                 sidebarFavoriteGroupOrderConfig,
-                sidebarCosmeticsConfig,
-                hideUserNotesConfig,
                 hideUserMemosConfig,
                 hideUnfriendsConfig,
                 randomUserColoursConfig,
@@ -196,10 +184,6 @@ export const useAppearanceSettingsStore = defineStore(
                 lastDarkThemeConfig
             ] = await Promise.all([
                 configRepository.getString('VRCX_appLanguage'),
-                configRepository.getBool('VRCX_displayVRCProfileThemes', true),
-                configRepository.getBool('VRCX_displayVRCProfileBackgrounds', false),
-                configRepository.getFloat('VRCX_profileBackgroundOpacity', 0.5),
-                configRepository.getBool('VRCX_displayVRCProfileCosmetics', false),
                 configRepository.getBool('VRCX_hideNicknames', false),
                 configRepository.getBool('VRCX_showInstanceIdInLocation', false),
                 configRepository.getBool('VRCX_isAgeGatedInstancesVisible', true),
@@ -222,8 +206,6 @@ export const useAppearanceSettingsStore = defineStore(
                 configRepository.getBool('VRCX_sidebarDivideByFriendGroup', true),
                 configRepository.getString('VRCX_sidebarFavoriteGroups', '[]'),
                 configRepository.getString('VRCX_sidebarFavoriteGroupOrder', '[]'),
-                configRepository.getBool('VRCX_sidebarCosmetics', false),
-                configRepository.getBool('VRCX_hideUserNotes', false),
                 configRepository.getBool('VRCX_hideUserMemos', false),
                 configRepository.getBool('VRCX_hideUnfriends', false),
                 configRepository.getBool('VRCX_randomUserColours', false),
@@ -266,10 +248,6 @@ export const useAppearanceSettingsStore = defineStore(
                 configRepository.setString('VRCX_fontFamily', normalizedAppFontFamily);
             }
 
-            displayVRCProfileThemes.value = displayVRCProfileThemesConfig;
-            displayVRCProfileBackgrounds.value = displayVRCProfileBackgroundsConfig;
-            profileBackgroundOpacity.value = profileBackgroundOpacityConfig;
-            displayVRCProfileCosmetics.value = displayVRCProfileCosmeticsConfig;
             hideNicknames.value = hideNicknamesConfig;
             showInstanceIdInLocation.value = showInstanceIdInLocationConfig;
             isAgeGatedInstancesVisible.value = isAgeGatedInstancesVisibleConfig;
@@ -359,8 +337,6 @@ export const useAppearanceSettingsStore = defineStore(
             isSidebarDivideByFriendGroup.value = isSidebarDivideByFriendGroupConfig;
             sidebarFavoriteGroups.value = JSON.parse(sidebarFavoriteGroupsConfig);
             sidebarFavoriteGroupOrder.value = JSON.parse(sidebarFavoriteGroupOrderConfig);
-            sidebarCosmetics.value = sidebarCosmeticsConfig;
-            hideUserNotes.value = hideUserNotesConfig;
             hideUserMemos.value = hideUserMemosConfig;
             hideUnfriends.value = hideUnfriendsConfig;
             randomUserColours.value = randomUserColoursConfig;
@@ -588,26 +564,6 @@ export const useAppearanceSettingsStore = defineStore(
             applyAppCjkFontPack(normalized);
         }
 
-        function setDisplayVRCProfileThemes() {
-            displayVRCProfileThemes.value = !displayVRCProfileThemes.value;
-            configRepository.setBool('VRCX_displayVRCProfileThemes', displayVRCProfileThemes.value);
-        }
-
-        function setDisplayVRCProfileBackgrounds() {
-            displayVRCProfileBackgrounds.value = !displayVRCProfileBackgrounds.value;
-            configRepository.setBool('VRCX_displayVRCProfileBackgrounds', displayVRCProfileBackgrounds.value);
-        }
-
-        function setProfileBackgroundOpacity(value) {
-            profileBackgroundOpacity.value = value;
-            configRepository.setFloat('VRCX_profileBackgroundOpacity', value);
-        }
-
-        function setDisplayVRCProfileCosmetics() {
-            displayVRCProfileCosmetics.value = !displayVRCProfileCosmetics.value;
-            configRepository.setBool('VRCX_displayVRCProfileCosmetics', displayVRCProfileCosmetics.value);
-        }
-
         function setNotificationIconDot() {
             notificationIconDot.value = !notificationIconDot.value;
             configRepository.setBool('VRCX_notificationIconDot', notificationIconDot.value);
@@ -771,14 +727,6 @@ export const useAppearanceSettingsStore = defineStore(
         function setSidebarFavoriteGroupOrder(value) {
             sidebarFavoriteGroupOrder.value = value;
             configRepository.setString('VRCX_sidebarFavoriteGroupOrder', JSON.stringify(value));
-        }
-        function setSidebarCosmetics() {
-            sidebarCosmetics.value = !sidebarCosmetics.value;
-            configRepository.setBool('VRCX_sidebarCosmetics', sidebarCosmetics.value);
-        }
-        function setHideUserNotes() {
-            hideUserNotes.value = !hideUserNotes.value;
-            configRepository.setBool('VRCX_hideUserNotes', hideUserNotes.value);
         }
         function setHideUserMemos() {
             hideUserMemos.value = !hideUserMemos.value;
@@ -1004,10 +952,6 @@ export const useAppearanceSettingsStore = defineStore(
             isDarkMode,
             appFontFamily,
             appCjkFontPack,
-            displayVRCProfileThemes,
-            displayVRCProfileBackgrounds,
-            profileBackgroundOpacity,
-            displayVRCProfileCosmetics,
             hideNicknames,
             showInstanceIdInLocation,
             isAgeGatedInstancesVisible,
@@ -1030,8 +974,6 @@ export const useAppearanceSettingsStore = defineStore(
             isSidebarDivideByFriendGroup,
             sidebarFavoriteGroups,
             sidebarFavoriteGroupOrder,
-            sidebarCosmetics,
-            hideUserNotes,
             hideUserMemos,
             hideUnfriends,
             randomUserColours,
@@ -1051,10 +993,6 @@ export const useAppearanceSettingsStore = defineStore(
             SEARCH_LIMIT_MAX,
 
             setAppLanguage,
-            setDisplayVRCProfileThemes,
-            setDisplayVRCProfileBackgrounds,
-            setProfileBackgroundOpacity,
-            setDisplayVRCProfileCosmetics,
             setHideNicknames,
             setShowInstanceIdInLocation,
             setIsAgeGatedInstancesVisible,
@@ -1077,8 +1015,6 @@ export const useAppearanceSettingsStore = defineStore(
             setIsSidebarDivideByFriendGroup,
             setSidebarFavoriteGroups,
             setSidebarFavoriteGroupOrder,
-            setSidebarCosmetics,
-            setHideUserNotes,
             setHideUserMemos,
             setHideUnfriends,
             setRandomUserColours,

@@ -4,30 +4,18 @@ import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 
 import { DEFAULT_MAX_TABLE_SIZE, DEFAULT_SEARCH_LIMIT, SEARCH_LIMIT_MAX, SEARCH_LIMIT_MIN } from '../shared/constants';
-import { avatarRequest, queryRequest } from '../api';
-import { debounce, parseLocation } from '../shared/utils';
+import { debounce } from '../shared/utils';
 import { AppDebug } from '../services/appConfig';
 import { database } from '../services/database';
 import { refreshCustomScript } from '../shared/utils/base/ui';
 import { useAdvancedSettingsStore } from './settings/advanced';
-import { useAvatarProviderStore } from './avatarProvider';
-import { addLocalWorldFavorite, addLocalAvatarFavorite } from '../coordinators/favoriteCoordinator';
-import { useFavoriteStore } from './favorite';
 import { useGameLogStore } from './gameLog';
-import { useGameStore } from './game';
 import { showGroupDialog } from '../coordinators/groupCoordinator';
 import { showWorldDialog } from '../coordinators/worldCoordinator';
-import {
-    showAvatarDialog,
-    selectAvatarWithConfirmation,
-    selectAvatarWithoutConfirmation
-} from '../coordinators/avatarCoordinator';
 import { showUserDialog, addCustomTag } from '../coordinators/userCoordinator';
 import { useLocationStore } from './location';
 import { useModalStore } from './modal';
 import { useNotificationStore } from './notification';
-import { usePhotonStore } from './photon';
-import { useSearchStore } from './search';
 import { useUpdateLoopStore } from './updateLoop';
 import { useUserStore } from './user';
 import { clearVRCXCache } from '../coordinators/vrcxCoordinator';
@@ -37,16 +25,11 @@ import { watchState } from '../services/watchState';
 import configRepository from '../services/config';
 
 export const useVrcxStore = defineStore('Vrcx', () => {
-    const gameStore = useGameStore();
     const locationStore = useLocationStore();
     const notificationStore = useNotificationStore();
 
-    const favoriteStore = useFavoriteStore();
     const userStore = useUserStore();
-    const photonStore = usePhotonStore();
     const advancedSettingsStore = useAdvancedSettingsStore();
-    const searchStore = useSearchStore();
-    const avatarProviderStore = useAvatarProviderStore();
     const gameLogStore = useGameLogStore();
     const updateLoopStore = useUpdateLoopStore();
     const { t } = useI18n();
@@ -74,7 +57,6 @@ export const useVrcxStore = defineStore('Vrcx', () => {
     });
 
     const currentlyDroppingFile = ref(null);
-    const isRegistryBackupDialogVisible = ref(false);
     const ipcEnabled = ref(false);
     const clearVRCXCacheFrequency = ref(172800);
     const maxTableSize = ref(DEFAULT_MAX_TABLE_SIZE);
@@ -266,10 +248,7 @@ export const useVrcxStore = defineStore('Vrcx', () => {
                 });
                 break;
             case 'Noty':
-                if (
-                    photonStore.photonLoggingEnabled ||
-                    (state.externalNotifierVersion && state.externalNotifierVersion > 21)
-                ) {
+                if (state.externalNotifierVersion && state.externalNotifierVersion > 21) {
                     return;
                 }
                 entry = {
@@ -319,62 +298,6 @@ export const useVrcxStore = defineStore('Vrcx', () => {
         }
     }
 
-    /**
-     * @param path
-     */
-    async function processScreenshot(path) {
-        let newPath = path;
-        if (advancedSettingsStore.screenshotHelper) {
-            const location = parseLocation(locationStore.lastLocation.location);
-            const metadata = {
-                application: 'VRCX',
-                version: 1,
-                author: {
-                    id: userStore.currentUser.id,
-                    displayName: userStore.currentUser.displayName
-                },
-                world: {
-                    name: locationStore.lastLocation.name,
-                    id: location.worldId,
-                    instanceId: locationStore.lastLocation.location
-                },
-                players: []
-            };
-            for (const user of locationStore.lastLocation.playerList.values()) {
-                metadata.players.push({
-                    id: user.userId,
-                    displayName: user.displayName
-                });
-            }
-            try {
-                newPath = await AppApi.AddScreenshotMetadata(
-                    path,
-                    JSON.stringify(metadata),
-                    location.worldId,
-                    advancedSettingsStore.screenshotHelperModifyFilename
-                );
-            } catch (e) {
-                console.error('Failed to add screenshot metadata', e);
-                if (e.message?.includes('UnauthorizedAccessException')) {
-                    toast.error(
-                        'Failed to add screenshot metadata, access denied. Make sure VRCX has permission to access the screenshot folder.',
-                        { duration: 10000 }
-                    );
-                }
-                return;
-            }
-            if (!newPath) {
-                console.error('Failed to add screenshot metadata', path);
-                return;
-            }
-            console.log('Screenshot metadata added', newPath);
-        }
-        if (advancedSettingsStore.screenshotHelperCopyToClipboard) {
-            await window.electron.copyImageToClipboard(newPath);
-            console.log('Screenshot copied to clipboard', newPath);
-        }
-    }
-
     // use in C# side
     /**
      * @param json
@@ -392,76 +315,8 @@ export const useVrcxStore = defineStore('Vrcx', () => {
         }
 
         switch (data.type) {
-            case 'OnEvent':
-                if (!gameStore.isGameRunning) {
-                    console.log('Game closed, skipped event', data);
-                    return;
-                }
-                if (AppDebug.debugPhotonLogging || AppDebug.debugIPC) {
-                    console.log(
-                        'OnEvent',
-                        data.OnEventData.Code,
-                        'Param[254]:',
-                        data.OnEventData.Parameters?.[254],
-                        data.OnEventData
-                    );
-                }
-                photonStore.parsePhotonEvent(data.OnEventData, data.dt);
-                photonStore.photonEventPulse();
-                break;
-            case 'OnOperationResponse':
-                if (!gameStore.isGameRunning) {
-                    console.log('Game closed, skipped event', data);
-                    return;
-                }
-                if (AppDebug.debugPhotonLogging || AppDebug.debugIPC) {
-                    console.log(
-                        'OnOperationResponse',
-                        data.OnOperationResponseData.OperationCode,
-                        'Param[254]:',
-                        data.OnOperationResponseData.Parameters?.[254],
-                        data.OnOperationResponseData
-                    );
-                }
-                photonStore.parseOperationResponse(data.OnOperationResponseData, data.dt);
-                photonStore.photonEventPulse();
-                break;
-            case 'OnOperationRequest':
-                if (!gameStore.isGameRunning) {
-                    console.log('Game closed, skipped event', data);
-                    return;
-                }
-                if (AppDebug.debugPhotonLogging || AppDebug.debugIPC) {
-                    console.log(
-                        'OnOperationRequest',
-                        data.OnOperationRequestData.OperationCode,
-                        data.OnOperationRequestData
-                    );
-                }
-                break;
-            case 'VRCEvent':
-                if (!gameStore.isGameRunning) {
-                    console.log('Game closed, skipped event', data);
-                    return;
-                }
-                if (AppDebug.debugIPC) {
-                    console.log('VRCEvent:', data);
-                }
-                photonStore.parseVRCEvent(data);
-                photonStore.photonEventPulse();
-                break;
-            case 'Event7List':
-                if (AppDebug.debugIPC) {
-                    console.log('Event7List:', data);
-                }
-                photonStore.photonEvent7List.clear();
-                for (const [id, dt] of Object.entries(data.Event7List)) {
-                    photonStore.photonEvent7List.set(parseInt(id, 10), dt);
-                }
-                photonStore.setPhotonLastEvent7List(Date.parse(data.dt));
-                break;
             case 'VrcxMessage':
-                if (AppDebug.debugPhotonLogging || AppDebug.debugIPC) {
+                if (AppDebug.debugIPC) {
                     console.log('VrcxMessage:', data);
                 }
                 await eventVrcxMessage(data);
@@ -469,9 +324,6 @@ export const useVrcxStore = defineStore('Vrcx', () => {
             case 'Ping':
                 if (AppDebug.debugIPC) {
                     console.log('IPC Ping');
-                }
-                if (!photonStore.photonLoggingEnabled) {
-                    photonStore.setPhotonLoggingEnabled();
                 }
                 ipcEnabled.value = true;
                 updateLoopStore.setIpcTimeout(60); // 30 seconds
@@ -506,7 +358,6 @@ export const useVrcxStore = defineStore('Vrcx', () => {
     watch(
         () => watchState.isLoggedIn,
         (isLoggedIn) => {
-            isRegistryBackupDialogVisible.value = false;
             if (isLoggedIn) {
                 startupLaunchCommand();
             }
@@ -559,16 +410,9 @@ export const useVrcxStore = defineStore('Vrcx', () => {
         const args = input.split('/');
         const command = args[0];
         const commandArg = args[1]?.trim();
-        let shouldFocusWindow = true;
         switch (command) {
             case 'world':
-                if (!searchStore.directAccessWorld(input.replace('world/', ''))) {
-                    // fallback for mangled world ids
-                    showWorldDialog(commandArg);
-                }
-                break;
-            case 'avatar':
-                showAvatarDialog(commandArg);
+                showWorldDialog(commandArg);
                 break;
             case 'user':
                 showUserDialog(commandArg);
@@ -576,161 +420,8 @@ export const useVrcxStore = defineStore('Vrcx', () => {
             case 'group':
                 showGroupDialog(commandArg);
                 break;
-            case 'local-favorite-world':
-                console.log('local-favorite-world', commandArg);
-                const [id, group] = commandArg.split(':');
-                if (!id || !group) {
-                    toast.error('Invalid local favorite world command');
-                    break;
-                }
-                queryRequest.fetch('world.location', { worldId: id }).then(() => {
-                    searchStore.directAccessWorld(id);
-                    addLocalWorldFavorite(id, group);
-                });
-                break;
-            case 'local-favorite-avatar':
-                console.log('local-favorite-avatar', commandArg);
-                const [avatarIdFav, avatarGroup] = commandArg.split(':');
-                if (!avatarIdFav || !avatarGroup) {
-                    toast.error('Invalid local favorite avatar command');
-                    break;
-                }
-                avatarRequest.getAvatar({ avatarId: avatarIdFav }).then(() => {
-                    showAvatarDialog(avatarIdFav);
-                    addLocalAvatarFavorite(avatarIdFav, avatarGroup);
-                });
-                break;
-            case 'addavatardb':
-                avatarProviderStore.addAvatarProvider(input.replace('addavatardb/', ''));
-                break;
-            case 'switchavatar':
-                const avatarId = commandArg;
-                const regexAvatarId = /avtr_[0-9A-Fa-f]{8}-([0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}/g;
-                if (!avatarId.match(regexAvatarId) || avatarId.length !== 41) {
-                    toast.error('Invalid Avatar ID');
-                    break;
-                }
-                if (advancedSettingsStore.showConfirmationOnSwitchAvatar) {
-                    selectAvatarWithConfirmation(avatarId);
-                    // Makes sure the window is focused
-                    shouldFocusWindow = true;
-                } else {
-                    selectAvatarWithoutConfirmation(avatarId).then(() => {
-                        toast.success('Avatar changed via launch command');
-                    });
-                    shouldFocusWindow = false;
-                }
-                break;
-            case 'import':
-                const type = args[1];
-                if (!type) break;
-                const data = input.replace(`import/${type}/`, '');
-                if (type === 'avatar') {
-                    favoriteStore.setAvatarImportDialogInput(data);
-                    favoriteStore.showAvatarImportDialog();
-                } else if (type === 'world') {
-                    favoriteStore.setWorldImportDialogInput(data);
-                    favoriteStore.showWorldImportDialog();
-                } else if (type === 'friend') {
-                    favoriteStore.setFriendImportDialogInput(data);
-                    favoriteStore.showFriendImportDialog();
-                }
-                break;
         }
-        if (shouldFocusWindow) {
-            window.electron.focusWindow();
-        }
-    }
-
-    /**
-     * @param name
-     */
-    async function backupVrcRegistry(name) {
-        let regJson;
-        try {
-            regJson = JSON.parse(await AppApi.GetVRChatRegistryJson());
-        } catch (e) {
-            console.error('Failed to get VRChat registry for backup:', e);
-            return;
-        }
-        const newBackup = {
-            name,
-            date: new Date().toJSON(),
-            data: regJson
-        };
-        let backupsJson = await configRepository.getString('VRCX_VRChatRegistryBackups');
-        if (!backupsJson) {
-            backupsJson = JSON.stringify([]);
-        }
-        const backups = JSON.parse(backupsJson);
-        backups.push(newBackup);
-        await configRepository.setString('VRCX_VRChatRegistryBackups', JSON.stringify(backups));
-        // await this.updateRegistryBackupDialog();
-    }
-
-    async function checkAutoBackupRestoreVrcRegistry() {
-        if (!advancedSettingsStore.vrcRegistryAutoBackup || !advancedSettingsStore.vrcRegistryAskRestore) {
-            return;
-        }
-
-        // check for auto restore
-        const hasVRChatRegistryFolder = await AppApi.HasVRChatRegistryFolder();
-        if (!hasVRChatRegistryFolder) {
-            const lastBackupDate = await configRepository.getString('VRCX_VRChatRegistryLastBackupDate');
-            const lastRestoreCheck = await configRepository.getString('VRCX_VRChatRegistryLastRestoreCheck');
-            if (!lastBackupDate || (lastRestoreCheck && lastBackupDate && lastRestoreCheck === lastBackupDate)) {
-                // only ask to restore once and when backup is present
-                return;
-            }
-            // popup message about auto restore
-            modalStore.alert({
-                description: t('dialog.registry_backup.restore_prompt'),
-                title: t('dialog.registry_backup.header')
-            });
-            showRegistryBackupDialog();
-            await window.electron.focusWindow();
-            await configRepository.setString('VRCX_VRChatRegistryLastRestoreCheck', lastBackupDate);
-        } else {
-            await tryAutoBackupVrcRegistry();
-        }
-    }
-
-    function showRegistryBackupDialog() {
-        isRegistryBackupDialogVisible.value = true;
-    }
-
-    async function tryAutoBackupVrcRegistry() {
-        if (!advancedSettingsStore.vrcRegistryAutoBackup) {
-            return;
-        }
-        const date = new Date();
-        const lastBackupDate = await configRepository.getString('VRCX_VRChatRegistryLastBackupDate');
-        if (lastBackupDate) {
-            const lastBackup = new Date(lastBackupDate);
-            const diff = date.getTime() - lastBackup.getTime();
-            const diffDays = Math.floor(diff / (1000 * 60 * 60 * 24));
-            if (diffDays < 3) {
-                return;
-            }
-        }
-        let backupsJson = await configRepository.getString('VRCX_VRChatRegistryBackups');
-        if (!backupsJson) {
-            backupsJson = JSON.stringify([]);
-        }
-        const backups = JSON.parse(backupsJson);
-        for (let i = backups.length - 1; i >= 0; i--) {
-            const backupDate = new Date(backups[i].date);
-            // remove backups older than 2 weeks
-            if (
-                backups[i].name === 'Auto Backup' &&
-                backupDate.getTime() < date.getTime() - 1209600000 // 2 weeks in milliseconds
-            ) {
-                backups.splice(i, 1);
-            }
-        }
-        await configRepository.setString('VRCX_VRChatRegistryBackups', JSON.stringify(backups));
-        backupVrcRegistry('Auto Backup');
-        await configRepository.setString('VRCX_VRChatRegistryLastBackupDate', date.toJSON());
+        window.electron.focusWindow();
     }
 
     // ran from Cef and Electron when browser is focused
@@ -755,7 +446,6 @@ export const useVrcxStore = defineStore('Vrcx', () => {
         setMaxTableSize,
         setSearchLimit,
         currentlyDroppingFile,
-        isRegistryBackupDialogVisible,
         ipcEnabled,
         clearVRCXCacheFrequency,
         maxTableSize,
@@ -763,13 +453,8 @@ export const useVrcxStore = defineStore('Vrcx', () => {
         clearVRCXCache,
         eventVrcxMessage,
         eventLaunchCommand,
-        showRegistryBackupDialog,
-        checkAutoBackupRestoreVrcRegistry,
-        tryAutoBackupVrcRegistry,
-        processScreenshot,
         ipcEvent,
         dragEnterCef,
-        backupVrcRegistry,
         updateDatabaseVersion,
         waitForDatabaseInit,
         onBrowserFocus,

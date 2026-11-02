@@ -54,13 +54,10 @@
         </component>
         <ContextMenuContent v-if="enableContextMenu && parsedLocation.isRealInstance && parsedLocation.worldId">
             <WorldActionMenuItems
-                :can-open-instance-in-game="canOpenInstanceInGame"
                 :show-share="true"
                 :show-previous-instances="true"
                 @view-details="handleShowWorldDialog"
                 @share="handleShareLocation"
-                @new-instance="handleNewInstance"
-                @self-invite="handleNewInstanceSelfInvite"
                 @show-previous-instances="handleShowPreviousInstances" />
         </ContextMenuContent>
     </component>
@@ -84,16 +81,9 @@
         resolveRegion,
         translateAccessType
     } from '../shared/utils';
-    import {
-        useAppearanceSettingsStore,
-        useInstanceStore,
-        useInviteStore,
-        useSearchStore,
-        useWorldStore
-    } from '../stores';
+    import { useAppearanceSettingsStore, useInstanceStore, useWorldStore } from '../stores';
     import { showGroupDialog } from '../coordinators/groupCoordinator';
     import { showWorldDialog } from '../coordinators/worldCoordinator';
-    import { runNewInstanceSelfInviteFlow } from '../coordinators/inviteCoordinator';
     import { Spinner } from './ui/spinner';
     import WorldActionMenuItems from './WorldActionMenuItems.vue';
     import { accessTypeLocaleKeyMap } from '../shared/constants';
@@ -109,10 +99,8 @@
 
     const { cachedWorlds } = useWorldStore();
     const { showPreviousInstancesInfoDialog } = useInstanceStore();
-    const { verifyShortName } = useSearchStore();
     const { cachedInstances } = useInstanceStore();
     const { lastInstanceApplied } = storeToRefs(useInstanceStore());
-    const { canOpenInstanceInGame } = useInviteStore();
     const { showInstanceIdInLocation, isAgeGatedInstancesVisible } = storeToRefs(useAppearanceSettingsStore());
 
     const props = defineProps({
@@ -322,10 +310,6 @@
     function handleShowWorldDialog() {
         if (props.link) {
             let instanceId = currentInstanceId();
-            if (!instanceId && props.hint.length === 8) {
-                verifyShortName('', props.hint);
-                return;
-            }
             if (props.isOpenPreviousInstanceInfoDialog) {
                 showPreviousInstancesInfoDialog(instanceId);
             } else {
@@ -350,18 +334,6 @@
         const L = parsedLocation.value;
         if (!L.worldId) return;
         copyToClipboard(`https://nexvr.net/worlds/${L.worldId}`, t('message.world.url_copied'));
-    }
-
-    function handleNewInstance() {
-        const L = parsedLocation.value;
-        if (!L.worldId) return;
-        showWorldDialog(L.tag, L.shortName);
-    }
-
-    function handleNewInstanceSelfInvite() {
-        const L = parsedLocation.value;
-        if (!L.worldId) return;
-        runNewInstanceSelfInviteFlow(L.worldId);
     }
 
     function handleShowPreviousInstances() {

@@ -9,7 +9,6 @@
                 <TabsList>
                     <TabsTrigger value="user">{{ t('view.search.user.header') }}</TabsTrigger>
                     <TabsTrigger value="world">{{ t('view.search.world.header') }}</TabsTrigger>
-                    <TabsTrigger value="avatar">{{ t('view.search.avatar.header') }}</TabsTrigger>
                     <TabsTrigger value="group">{{ t('view.search.group.header') }}</TabsTrigger>
                 </TabsList>
                 <div class="flex min-w-0 flex-1 items-center">
@@ -58,7 +57,6 @@
                                             <User class="size-5 text-muted-foreground" />
                                         </AvatarFallback>
                                     </Avatar>
-                                    <IconFrame :icon-frame="user.iconFrame" />
                                 </ItemMedia>
                                 <ItemContent class="min-w-0">
                                     <ItemTitle class="flex items-center gap-1.5 max-w-full">
@@ -172,86 +170,6 @@
                     @prev="paginationConfig.onPrev"
                     @next="paginationConfig.onNext" />
             </TabsContent>
-            <TabsContent value="avatar" class="flex flex-col min-h-0 flex-1">
-                <div class="flex flex-col min-h-0" style="flex: 9">
-                    <div class="shrink-0 mb-3 flex items-center justify-end gap-2">
-                        <Select
-                            v-if="avatarRemoteDatabaseProviderList.length > 0"
-                            :model-value="avatarRemoteDatabaseProvider"
-                            @update:modelValue="setAvatarProvider">
-                            <SelectTrigger size="sm">
-                                <SelectValue :placeholder="t('view.search.avatar.search_provider')" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectItem
-                                        v-for="provider in avatarRemoteDatabaseProviderList.filter(Boolean)"
-                                        :key="provider"
-                                        :value="provider">
-                                        {{ provider }}
-                                    </SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                        <span v-else class="text-sm text-muted-foreground">
-                            {{ t('view.search.avatar.no_provider') }}
-                        </span>
-                        <Button size="sm" variant="outline" @click="isAvatarProviderDialogVisible = true">
-                            <Settings class="size-4" />
-                        </Button>
-                    </div>
-                    <div class="flex-1 overflow-y-auto min-h-0 mt-2">
-                        <div v-if="isSearchAvatarLoading" class="flex items-center justify-center h-full">
-                            <Spinner class="text-2xl" />
-                        </div>
-                        <template v-else-if="searchAvatarPage.length > 0">
-                            <ItemGroup
-                                class="grid gap-3"
-                                style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))">
-                                <Item
-                                    v-for="avatar in searchAvatarPage"
-                                    :key="avatar.id"
-                                    variant="outline"
-                                    size="sm"
-                                    class="cursor-pointer p-3"
-                                    as-child>
-                                    <div class="overflow-hidden" @click="showAvatarDialog(avatar.id)">
-                                        <ItemHeader>
-                                            <img
-                                                v-if="avatar.thumbnailImageUrl"
-                                                :src="avatar.thumbnailImageUrl"
-                                                :alt="avatar.name"
-                                                loading="lazy"
-                                                class="aspect-[16/10] w-full rounded-lg object-cover" />
-                                            <img
-                                                v-else-if="avatar.imageUrl"
-                                                :src="avatar.imageUrl"
-                                                :alt="avatar.name"
-                                                loading="lazy"
-                                                class="aspect-[16/10] w-full rounded-sm object-cover" />
-                                        </ItemHeader>
-                                        <ItemContent class="min-w-0">
-                                            <TooltipWrapper side="top" :content="avatar.name">
-                                                <ItemTitle class="truncate w-auto">{{ avatar.name }}</ItemTitle>
-                                            </TooltipWrapper>
-                                            <ItemDescription class="line-clamp-1 text-xs">
-                                                {{ avatar.authorName }}
-                                            </ItemDescription>
-                                        </ItemContent>
-                                    </div>
-                                </Item>
-                            </ItemGroup>
-                        </template>
-                        <DataTableEmpty v-else type="nodata" />
-                    </div>
-                </div>
-                <SearchPagination
-                    :show="paginationConfig.show"
-                    :prev-disabled="paginationConfig.prevDisabled"
-                    :next-disabled="paginationConfig.nextDisabled"
-                    @prev="paginationConfig.onPrev"
-                    @next="paginationConfig.onNext" />
-            </TabsContent>
             <TabsContent value="group" class="flex flex-col min-h-0 flex-1">
                 <div class="flex-1 overflow-y-auto min-h-0" style="flex: 9">
                     <div v-if="isSearchGroupLoading" class="flex items-center justify-center h-full">
@@ -298,18 +216,15 @@
                     @next="paginationConfig.onNext" />
             </TabsContent>
         </Tabs>
-        <AvatarProviderDialog v-model:isAvatarProviderDialogVisible="isAvatarProviderDialogVisible" />
     </div>
 </template>
 
 <script setup>
     import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-    import { Settings, Trash2, User, Users } from 'lucide-vue-next';
+    import { Trash2, User, Users } from 'lucide-vue-next';
     import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-    import IconFrame from '@/components/IconFrame.vue';
     import { DataTableEmpty } from '@/components/ui/data-table';
     import { Spinner } from '@/components/ui/spinner';
-    import AvatarProviderDialog from '../Settings/dialogs/AvatarProviderDialog.vue';
     import SearchPagination from './components/SearchPagination.vue';
     import {
         Item,
@@ -323,7 +238,6 @@
 
     import { computed, onUnmounted, ref } from 'vue';
     import { useMagicKeys, whenever } from '@vueuse/core';
-    import { toast } from 'vue-sonner';
     import { Button } from '@/components/ui/button';
     import { Checkbox } from '@/components/ui/checkbox';
     import { InputGroupField } from '@/components/ui/input-group';
@@ -332,22 +246,17 @@
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 
-    import { useAppearanceSettingsStore, useAuthStore, useAvatarProviderStore, useSearchStore } from '../../stores';
+    import { useAppearanceSettingsStore, useAuthStore, useSearchStore } from '../../stores';
     import { convertFileUrlToImageUrl, languageClass, replaceBioSymbols } from '../../shared/utils';
     import { useUserDisplay } from '../../composables/useUserDisplay';
-    import { showAvatarDialog } from '../../coordinators/avatarCoordinator';
     import { showGroupDialog } from '../../coordinators/groupCoordinator';
     import { showUserDialog } from '../../coordinators/userCoordinator';
     import { showWorldDialog } from '../../coordinators/worldCoordinator';
-    import { useSearchAvatar } from './composables/useSearchAvatar';
     import { useSearchWorld } from './composables/useSearchWorld';
     import { useSearchUser } from './composables/useSearchUser';
     import { useSearchGroup } from './composables/useSearchGroup';
 
     const { randomUserColours } = storeToRefs(useAppearanceSettingsStore());
-    const { avatarRemoteDatabaseProviderList, avatarRemoteDatabaseProvider, isAvatarProviderDialogVisible } =
-        storeToRefs(useAvatarProviderStore());
-    const { setAvatarProvider } = useAvatarProviderStore();
 
     const { searchText, searchUserResults } = storeToRefs(useSearchStore());
     const { clearSearch } = useSearchStore();
@@ -376,9 +285,6 @@
     });
 
     const searchPlaceholder = computed(() => {
-        if (activeSearchTab.value === 'avatar') {
-            return t('view.search.avatar.search_placeholder_avatar');
-        }
         return t('view.search.search_placeholder');
     });
 
@@ -390,16 +296,6 @@
         handleMoreSearchUser,
         clearUserSearch
     } = useSearchUser();
-
-    const {
-        searchAvatarPageNum,
-        searchAvatarResults,
-        searchAvatarPage,
-        isSearchAvatarLoading,
-        searchAvatar,
-        moreSearchAvatar,
-        clearAvatarSearch
-    } = useSearchAvatar();
 
     const {
         searchWorldLabs,
@@ -441,16 +337,6 @@
                     onPrev: () => moreSearchWorld(-1),
                     onNext: () => moreSearchWorld(1)
                 };
-            case 'avatar':
-                return {
-                    show: searchAvatarPage.value.length > 0 && !isSearchAvatarLoading.value,
-                    prevDisabled: !searchAvatarPageNum.value,
-                    nextDisabled:
-                        searchAvatarResults.value.length < 10 ||
-                        (searchAvatarPageNum.value + 1) * 10 >= searchAvatarResults.value.length,
-                    onPrev: () => moreSearchAvatar(-1),
-                    onNext: () => moreSearchAvatar(1)
-                };
             case 'group':
                 return {
                     show: searchGroupResults.value.length > 0 && !isSearchGroupLoading.value,
@@ -471,7 +357,6 @@
     function handleClearSearch() {
         clearUserSearch();
         clearWorldSearch();
-        clearAvatarSearch();
         clearGroupSearch();
         clearSearch();
     }
@@ -484,19 +369,12 @@
     }
 
     function search() {
-        if (activeSearchTab.value === 'avatar' && (!searchText.value || searchText.value.length < 3)) {
-            toast.warning(t('view.search.avatar.min_chars_warning'));
-            return;
-        }
         switch (activeSearchTab.value) {
             case 'user':
                 searchUser();
                 break;
             case 'world':
                 searchWorld({});
-                break;
-            case 'avatar':
-                searchAvatar();
                 break;
             case 'group':
                 searchGroup();

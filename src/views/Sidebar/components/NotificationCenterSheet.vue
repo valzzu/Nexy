@@ -31,35 +31,23 @@
                     <NotificationList
                         :notifications="unseenFriendNotifications"
                         :recent-notifications="recentFriendNotifications"
-                        @show-invite-response="showSendInviteResponseDialog"
-                        @show-invite-request-response="showSendInviteRequestResponseDialog"
                         @navigate-to-table="navigateToTable" />
                 </TabsContent>
                 <TabsContent value="group" class="mt-0 min-h-0 flex-1 overflow-hidden">
                     <NotificationList
                         :notifications="unseenGroupNotifications"
                         :recent-notifications="recentGroupNotifications"
-                        @show-invite-response="showSendInviteResponseDialog"
-                        @show-invite-request-response="showSendInviteRequestResponseDialog"
                         @navigate-to-table="navigateToTable" />
                 </TabsContent>
                 <TabsContent value="other" class="mt-0 min-h-0 flex-1 overflow-hidden">
                     <NotificationList
                         :notifications="unseenOtherNotifications"
                         :recent-notifications="recentOtherNotifications"
-                        @show-invite-response="showSendInviteResponseDialog"
-                        @show-invite-request-response="showSendInviteRequestResponseDialog"
                         @navigate-to-table="navigateToTable" />
                 </TabsContent>
             </Tabs>
         </SheetContent>
     </Sheet>
-    <SendInviteResponseDialog
-        v-model:send-invite-response-dialog="sendInviteResponseDialog"
-        v-model:sendInviteResponseDialogVisible="sendInviteResponseDialogVisible" />
-    <SendInviteRequestResponseDialog
-        v-model:send-invite-response-dialog="sendInviteResponseDialog"
-        v-model:sendInviteRequestResponseDialogVisible="sendInviteRequestResponseDialogVisible" />
 </template>
 
 <script setup>
@@ -70,16 +58,12 @@
     import { useI18n } from 'vue-i18n';
     import { useRouter } from 'vue-router';
 
-    import { useGalleryStore, useInviteStore, useNotificationStore } from '../../../stores';
+    import { useNotificationStore } from '../../../stores';
 
     import NotificationList from './NotificationList.vue';
-    import SendInviteRequestResponseDialog from '../../Notifications/dialogs/SendInviteRequestResponseDialog.vue';
-    import SendInviteResponseDialog from '../../Notifications/dialogs/SendInviteResponseDialog.vue';
 
     const { t } = useI18n();
     const router = useRouter();
-    const { refreshInviteMessageTableData } = useInviteStore();
-    const { clearInviteImageUpload } = useGalleryStore();
 
     const {
         isNotificationCenterOpen,
@@ -107,32 +91,8 @@
         }
     });
 
-    // Dialog state
-    const sendInviteResponseDialog = ref({
-        messageSlot: {},
-        invite: {}
-    });
-    const sendInviteResponseDialogVisible = ref(false);
-    const sendInviteRequestResponseDialogVisible = ref(false);
-
     function navigateToTable() {
         isNotificationCenterOpen.value = false;
         router.push({ name: 'notification', query: { fromCenter: '1' } });
-    }
-
-    function showSendInviteResponseDialog(invite) {
-        sendInviteResponseDialog.value.invite = invite;
-        sendInviteResponseDialog.value.messageSlot = {};
-        refreshInviteMessageTableData('response');
-        clearInviteImageUpload();
-        sendInviteResponseDialogVisible.value = true;
-    }
-
-    function showSendInviteRequestResponseDialog(invite) {
-        sendInviteResponseDialog.value.invite = invite;
-        sendInviteResponseDialog.value.messageSlot = {};
-        refreshInviteMessageTableData('requestResponse');
-        clearInviteImageUpload();
-        sendInviteRequestResponseDialogVisible.value = true;
     }
 </script>

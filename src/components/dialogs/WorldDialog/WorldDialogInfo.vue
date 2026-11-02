@@ -72,19 +72,6 @@
                 <div class="flex items-start justify-between gap-2 text-xs">
                     <span class="inline-flex items-center text-muted-foreground shrink-0">
                         {{ t('dialog.world.info.last_updated') }}
-                        <TooltipWrapper v-if="Object.keys(worldDialog.fileAnalysis).length" side="right">
-                            <template #content>
-                                <template
-                                    v-for="(created_at, platform) in worldDialogPlatformCreatedAt"
-                                    :key="platform">
-                                    <div class="flex justify-between w-full">
-                                        <span class="mr-1">{{ platform }}:</span>
-                                        <span>{{ formatDateFilter(created_at, 'long') }}</span>
-                                    </div>
-                                </template>
-                            </template>
-                            <ChevronDown class="size-3" />
-                        </TooltipWrapper>
                     </span>
                     <TooltipWrapper
                         side="right"
@@ -217,7 +204,6 @@
         favoriteRate,
         worldTags,
         worldDialogPlatform,
-        worldDialogPlatformCreatedAt,
         commaNumber,
         formatDateFilter
     } = useWorldDialogInfo(worldDialog, { t, toast, sdkUnityVersion: authStore.cachedConfig.sdkUnityVersion });

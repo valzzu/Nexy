@@ -1,6 +1,5 @@
 import { parseLocation } from './location';
 import { queryRequest } from '../../api';
-import { rpcWorlds } from '../constants';
 
 /**
  * @param {string} location
@@ -24,16 +23,4 @@ async function getWorldName(location) {
     return worldName;
 }
 
-/**
- * @param {string} location
- * @returns
- */
-function isRpcWorld(location) {
-    const L = parseLocation(location);
-    if (rpcWorlds.includes(L.worldId)) {
-        return true;
-    }
-    return false;
-}
-
-export { getWorldName, isRpcWorld };
+export { getWorldName };

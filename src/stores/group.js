@@ -97,87 +97,6 @@ export const useGroupStore = defineStore('Group', () => {
 
     const currentUserGroups = reactive(new Map());
 
-    const inviteGroupDialog = ref({
-        visible: false,
-        loading: false,
-        groupId: '',
-        groupName: '',
-        userId: '',
-        userIds: [],
-        userObject: {
-            id: '',
-            displayName: '',
-            $userColour: ''
-        }
-    });
-
-    const moderateGroupDialog = ref({
-        visible: false,
-        groupId: '',
-        groupName: '',
-        userId: '',
-        userObject: {}
-    });
-
-    const groupMemberModeration = ref({
-        visible: false,
-        loading: false,
-        id: '',
-        groupRef: {},
-        auditLogTypes: [],
-        openWithUserId: '',
-        activeTab: '',
-        activeInviteTab: '',
-        selectedUsers: {},
-        selectedUsersArray: [],
-        tables: {
-            members: {
-                data: [],
-                pageSize: 15,
-                pageIndex: 0
-            },
-            bans: {
-                data: [],
-                pageSize: 15,
-                pageIndex: 0,
-                filters: [{ prop: ['$displayName'], value: '' }]
-            },
-            invites: {
-                data: [],
-                pageSize: 15,
-                pageIndex: 0
-            },
-            joinRequests: {
-                data: [],
-                pageSize: 15,
-                pageIndex: 0
-            },
-            blocked: {
-                data: [],
-                pageSize: 15,
-                pageIndex: 0
-            },
-            logs: {
-                data: [],
-                pageSize: 15,
-                pageIndex: 0,
-                filters: [{ prop: ['description'], value: '' }]
-            }
-        }
-    });
-
-    const groupRolesDialog = ref({
-        visible: false,
-        loading: false,
-        id: '',
-        groupRef: {},
-        roles: [],
-        permissions: [],
-        selectedRoleId: ''
-    });
-
-    const inGameGroupOrder = ref([]);
-
     const groupInstances = ref([]);
 
     const currentUserGroupsInit = ref(false);
@@ -188,10 +107,6 @@ export const useGroupStore = defineStore('Group', () => {
             groupDialog.value.visible = false;
             groupEditDialog.value.visible = false;
             groupEventEditDialog.value.visible = false;
-            inviteGroupDialog.value.visible = false;
-            moderateGroupDialog.value.visible = false;
-            groupMemberModeration.value.visible = false;
-            groupRolesDialog.value.visible = false;
             currentUserGroupsInit.value = false;
             cachedGroups.clear();
             currentUserGroups.clear();
@@ -263,25 +178,6 @@ export const useGroupStore = defineStore('Group', () => {
         };
     }
 
-    /**
-     * @param a
-     * @param b
-     */
-    function sortGroupInstancesByInGame(a, b) {
-        const aIndex = inGameGroupOrder.value.indexOf(a?.group?.id);
-        const bIndex = inGameGroupOrder.value.indexOf(b?.group?.id);
-        if (aIndex === -1 && bIndex === -1) {
-            return 0;
-        }
-        if (aIndex === -1) {
-            return 1;
-        }
-        if (bIndex === -1) {
-            return -1;
-        }
-        return aIndex - bIndex;
-    }
-
     function updateGroupPostSearch() {
         const D = groupDialog.value;
         const search = D.postsSearch.toLowerCase();
@@ -343,41 +239,10 @@ export const useGroupStore = defineStore('Group', () => {
     }
 
     /**
-     * @param userId
-     */
-    function showModerateGroupDialog(userId) {
-        const D = moderateGroupDialog.value;
-        D.userId = userId;
-        D.userObject = {};
-        D.visible = true;
-    }
-
-    /**
-     * @param {boolean} value
-     */
-    function setGroupMemberModerationVisible(value) {
-        groupMemberModeration.value.visible = value;
-    }
-
-    /**
-     * @param {boolean} value
-     */
-    function setGroupRolesDialogVisible(value) {
-        groupRolesDialog.value.visible = value;
-    }
-
-    /**
      * @param {boolean} value
      */
     function setCurrentUserGroupsInit(value) {
         currentUserGroupsInit.value = value;
-    }
-
-    /**
-     * @param {Array} value
-     */
-    function setInGameGroupOrder(value) {
-        inGameGroupOrder.value = value;
     }
 
     /**
@@ -552,26 +417,16 @@ export const useGroupStore = defineStore('Group', () => {
         groupEventEditDialog,
         groupEventRevision,
         currentUserGroups,
-        inviteGroupDialog,
-        moderateGroupDialog,
-        groupMemberModeration,
-        groupRolesDialog,
         cachedGroups,
-        inGameGroupOrder,
         groupInstances,
         currentUserGroupsInit,
         getAllGroupPosts,
         applyGroupEvent,
-        sortGroupInstancesByInGame,
         updateGroupPostSearch,
         handleGroupPost,
         clearGroupInstances,
         setGroupDialogVisible,
-        showModerateGroupDialog,
-        setGroupMemberModerationVisible,
-        setGroupRolesDialogVisible,
         setCurrentUserGroupsInit,
-        setInGameGroupOrder,
         setGroupInstances,
         showCreateGroupDialog,
         showEditGroupDialog,

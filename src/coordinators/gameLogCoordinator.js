@@ -4,38 +4,29 @@ import { watch } from 'vue';
 import {
     createJoinLeaveEntry,
     createLocationEntry,
-    createPortalSpawnEntry,
-    createResourceLoadEntry,
     findUserByDisplayName,
     parseLocation,
-    parseInventoryFromUrl,
-    parsePrintFromUrl,
     replaceBioSymbols
 } from '../shared/utils';
 import { i18n } from '../plugins/i18n';
-import { AppDebug, logWebRequest } from '../services/appConfig';
+import { AppDebug } from '../services/appConfig';
 import { database } from '../services/database';
 import { runLastLocationResetFlow, runUpdateCurrentUserLocationFlow } from './locationCoordinator';
 import { getGroupName } from '../shared/utils';
 import { userRequest } from '../api';
-import { watchState } from '../services/watchState';
 import { toast } from 'vue-sonner';
 
 import { useAdvancedSettingsStore } from '../stores/settings/advanced';
 import { useFriendStore } from '../stores/friend';
-import { useGalleryStore } from '../stores/gallery';
 import { useGameStore } from '../stores/game';
 import { useGameLogStore } from '../stores/gameLog';
-import { useGeneralSettingsStore } from '../stores/settings/general';
 import { useInstanceStore } from '../stores/instance';
 import { useLocationStore } from '../stores/location';
 import { useModalStore } from '../stores/modal';
 import { useNotificationStore } from '../stores/notification';
-import { usePhotonStore } from '../stores/photon';
 import { useSharedFeedStore } from '../stores/sharedFeed';
 import { useUserStore } from '../stores/user';
 import { useVrStore } from '../stores/vr';
-import { useVrcxStore } from '../stores/vrcx';
 
 /**
  * Loads the player list from game log history and syncs it to
@@ -168,11 +159,7 @@ export async function addGameLogEntry(gameLog, location) {
     const friendStore = useFriendStore();
     const vrStore = useVrStore();
     const gameStore = useGameStore();
-    const vrcxStore = useVrcxStore();
     const advancedSettingsStore = useAdvancedSettingsStore();
-    const generalSettingsStore = useGeneralSettingsStore();
-    const galleryStore = useGalleryStore();
-    const photonStore = usePhotonStore();
     const sharedFeedStore = useSharedFeedStore();
     const notificationStore = useNotificationStore();
 
@@ -188,35 +175,11 @@ export async function addGameLogEntry(gameLog, location) {
                 ?.id ?? '';
     }
     switch (gameLog.type) {
-        case 'location-destination':
-            if (gameStore.isGameRunning) {
-                gameLogStore.addGameLog({
-                    created_at: gameLog.dt,
-                    type: 'LocationDestination',
-                    location: gameLog.location
-                });
-                await runLastLocationResetFlow(gameLog.dt);
-                locationStore.setLastLocationLocation('traveling');
-                locationStore.setLastLocationDestination(gameLog.location);
-                locationStore.setLastLocationDestinationTime(Date.parse(gameLog.dt));
-                gameLogStore.state.lastLocationAvatarList.clear();
-                instanceStore.removeQueuedInstance(gameLog.location);
-                runUpdateCurrentUserLocationFlow();
-                gameLogStore.clearNowPlaying();
-                gameLogStore.resetNowPlayingProducers();
-                instanceStore.updateCurrentInstanceWorld();
-                userStore.applyUserDialogLocation();
-                instanceStore.applyWorldDialogInstances();
-                instanceStore.applyGroupDialogInstances();
-            }
-            break;
         case 'location':
             instanceStore.addInstanceJoinHistory(locationStore.lastLocation.location, gameLog.dt);
             const worldName = replaceBioSymbols(gameLog.worldName);
             if (gameStore.isGameRunning) {
                 await runLastLocationResetFlow(gameLog.dt);
-                gameLogStore.clearNowPlaying();
-                gameLogStore.resetNowPlayingProducers();
                 locationStore.setLastLocation({
                     date: Date.parse(gameLog.dt),
                     location: gameLog.location,
@@ -287,177 +250,10 @@ export async function addGameLogEntry(gameLog, location) {
             locationStore.lastLocation.friendList.delete(userId);
             friendStore.updateFriendLastSeen(userId, gameLog.dt);
             gameLogStore.state.lastLocationAvatarList.delete(gameLog.displayName);
-            photonStore.photonLobbyAvatars.delete(userId);
             vrStore.updateVRLastLocation();
             instanceStore.getCurrentInstanceUserList();
             entry = createJoinLeaveEntry('OnPlayerLeft', gameLog.dt, gameLog.displayName, location, userId, time);
             persistedEntryPromise = database.addGamelogJoinLeaveToDatabase(entry);
-            break;
-        case 'portal-spawn':
-            if (vrcxStore.ipcEnabled && gameStore.isGameRunning) {
-                break;
-            }
-            entry = createPortalSpawnEntry(gameLog.dt, location);
-            persistedEntryPromise = database.addGamelogPortalSpawnToDatabase(entry);
-            break;
-        case 'nowplaying':
-            await gameLogStore.handleNowPlayingEvent(gameLog, location);
-            break;
-        case 'video-play':
-            if (gameLogStore.hasNowPlayingProducer()) {
-                break;
-            }
-            gameLog.videoUrl = decodeURI(gameLog.videoUrl);
-            if (gameLogStore.lastVideoUrl === gameLog.videoUrl) {
-                break;
-            }
-            gameLogStore.setLastVideoUrl(gameLog.videoUrl);
-            await gameLogStore.addGameLogVideo(gameLog, location, userId);
-            break;
-        case 'video-sync':
-            const timestamp = gameLog.timestamp.replace(/,/g, '');
-            if (gameLogStore.nowPlaying.playing) {
-                gameLogStore.nowPlaying.offset = parseInt(timestamp, 10);
-            }
-            break;
-        case 'resource-load-string':
-        case 'resource-load-image':
-            if (!generalSettingsStore.logResourceLoad || gameLogStore.lastResourceloadUrl === gameLog.resourceUrl) {
-                break;
-            }
-            gameLogStore.setLastResourceloadUrl(gameLog.resourceUrl);
-            entry = createResourceLoadEntry(gameLog.type, gameLog.dt, gameLog.resourceUrl, location);
-            persistedEntryPromise = database.addGamelogResourceLoadToDatabase(entry);
-            break;
-        case 'screenshot':
-            vrcxStore.processScreenshot(gameLog.screenshotPath);
-            break;
-        case 'api-request':
-            logWebRequest('[GAMELOG API]', gameLog.url);
-            if (advancedSettingsStore.saveInstanceEmoji) {
-                const inv = parseInventoryFromUrl(gameLog.url);
-                if (inv) {
-                    galleryStore.queueCheckInstanceInventory(inv.inventoryId, inv.userId);
-                }
-            }
-            if (advancedSettingsStore.saveInstancePrints) {
-                const printId = parsePrintFromUrl(gameLog.url);
-                if (printId) {
-                    galleryStore.queueSavePrintToFile(printId);
-                }
-            }
-            break;
-        case 'avatar-change':
-            if (!gameStore.isGameRunning) {
-                break;
-            }
-            let avatarName = gameLogStore.state.lastLocationAvatarList.get(gameLog.displayName);
-            if (photonStore.photonLoggingEnabled || avatarName === gameLog.avatarName) {
-                break;
-            }
-            if (!avatarName) {
-                avatarName = gameLog.avatarName;
-                gameLogStore.state.lastLocationAvatarList.set(gameLog.displayName, avatarName);
-                break;
-            }
-            avatarName = gameLog.avatarName;
-            gameLogStore.state.lastLocationAvatarList.set(gameLog.displayName, avatarName);
-            entry = {
-                created_at: gameLog.dt,
-                type: 'AvatarChange',
-                userId,
-                name: avatarName,
-                displayName: gameLog.displayName
-            };
-            break;
-        case 'vrcx':
-            const type = gameLog.data.substr(0, gameLog.data.indexOf(' '));
-            if (type === 'VideoPlay(VRDancing)') {
-                await gameLogStore.addGameLogVRDancing(gameLog, location);
-            } else if (type === 'LSMedia') {
-                await gameLogStore.addGameLogLSMedia(gameLog, location);
-            } else if (type === 'VideoPlay(PopcornPalace)') {
-                await gameLogStore.addGameLogPopcornPalace(gameLog, location);
-            }
-            break;
-        case 'photon-id':
-            if (!gameStore.isGameRunning || !watchState.isFriendsLoaded) {
-                break;
-            }
-            const photonId = parseInt(gameLog.photonId, 10);
-            const ref2 = photonStore.photonLobby.get(photonId);
-            if (typeof ref2 === 'undefined') {
-                const foundUser = findUserByDisplayName(
-                    userStore.cachedUsers,
-                    gameLog.displayName,
-                    userStore.cachedUserIdsByDisplayName
-                );
-                if (foundUser) {
-                    photonStore.photonLobby.set(photonId, foundUser);
-                    photonStore.photonLobbyCurrent.set(photonId, foundUser);
-                }
-                const ctx1 = {
-                    displayName: gameLog.displayName
-                };
-                photonStore.photonLobby.set(photonId, ctx1);
-                photonStore.photonLobbyCurrent.set(photonId, ctx1);
-                instanceStore.getCurrentInstanceUserList();
-            }
-            break;
-        case 'notification':
-            break;
-        case 'event':
-            entry = {
-                created_at: gameLog.dt,
-                type: 'Event',
-                data: gameLog.event
-            };
-            persistedEntryPromise = database.addGamelogEventToDatabase(entry);
-            if (gameStore.isGameRunning && gameLog.event.startsWith('VideoError: ')) {
-                checkYoutubeBotError(gameLog.event);
-            }
-            break;
-        case 'vrc-quit':
-            if (!gameStore.isGameRunning) {
-                break;
-            }
-            if (advancedSettingsStore.vrcQuitFix) {
-                const bias = Date.parse(gameLog.dt) + 3000;
-                if (bias < Date.now()) {
-                    console.log('QuitFix: Bias too low, not killing VRC');
-                    break;
-                }
-                AppApi.QuitGame().then((processCount) => {
-                    if (processCount > 1) {
-                        console.log('QuitFix: More than 1 process running, not killing VRC');
-                    } else if (processCount === 1) {
-                        console.log('QuitFix: Killed VRC');
-                    } else {
-                        console.log('QuitFix: Nothing to kill, no VRC process running');
-                    }
-                });
-            }
-            break;
-        case 'openvr-init':
-            gameStore.setIsGameNoVR(false);
-            configRepository.setBool('isGameNoVR', gameStore.isGameNoVR);
-            vrStore.updateOpenVR();
-            break;
-        case 'desktop-mode':
-            gameStore.setIsGameNoVR(true);
-            configRepository.setBool('isGameNoVR', gameStore.isGameNoVR);
-            vrStore.updateOpenVR();
-            break;
-        case 'udon-exception':
-            if (generalSettingsStore.udonExceptionLogging) {
-                console.log('UdonException', gameLog.data);
-            }
-            break;
-        case 'sticker-spawn':
-            if (!advancedSettingsStore.saveInstanceStickers) {
-                break;
-            }
-            galleryStore.trySaveStickerToFile(gameLog.displayName, gameLog.userId, gameLog.inventoryId);
             break;
     }
     if (typeof entry !== 'undefined') {
@@ -471,33 +267,6 @@ export async function addGameLogEntry(gameLog, location) {
         } else {
             gameLogStore.addGameLog(entry);
         }
-    }
-}
-
-let youtubeBotErrorPrompted = false;
-
-/**
- * @param {string} videoError
- */
-async function checkYoutubeBotError(videoError) {
-    if (youtubeBotErrorPrompted || !videoError.includes('Sign in to confirm')) {
-        return;
-    }
-    youtubeBotErrorPrompted = true;
-    if (await configRepository.getBool('VRCX_hideYoutubeBotErrorPrompt', false)) {
-        return;
-    }
-    const t = i18n.global.t;
-    const { ok, checked } = await useModalStore().confirm({
-        description: t('confirm.youtube_bot_error'),
-        title: t('confirm.youtube_bot_error_title'),
-        checkboxLabel: t('dialog.alertdialog.dont_show_again')
-    });
-    if (checked) {
-        configRepository.setBool('VRCX_hideYoutubeBotErrorPrompt', true);
-    }
-    if (ok) {
-        AppApi.OpenSteamStorePage(4296960);
     }
 }
 
@@ -529,5 +298,3 @@ export async function disableGameLogDialog() {
         advancedSettingsStore.setGameLogDisabled();
     }
 }
-
-import configRepository from '../services/config';

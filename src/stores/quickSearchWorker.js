@@ -5,10 +5,10 @@
  * locale-aware string search from the main thread.
  *
  * Protocol — Main → Worker:
- * { type: 'updateIndex', payload: { friends, avatars, worlds, groups, favAvatars, favWorlds } }
+ * { type: 'updateIndex', payload: { friends, worlds, groups, favWorlds } }
  * { type: 'search', payload: { seq, query, currentUserId, language } }
  *
- * Protocol — Worker → Main: { type: 'searchResult', payload: { seq, friends, ownAvatars, favAvatars, ownWorlds,
+ * Protocol — Worker → Main: { type: 'searchResult', payload: { seq, friends, ownWorlds,
  * favWorlds, ownGroups, joinedGroups } }
  */
 
@@ -115,11 +115,9 @@ function isPrefixMatch(name, cleanQuery, comparer) {
     return comparer.compare(name.substring(0, cleanQuery.length), cleanQuery) === 0;
 }
 
-let indexedFriends = []; // { id, name, memo, note, imageUrl }
-let indexedAvatars = []; // { id, name, authorId, imageUrl }
+let indexedFriends = []; // { id, name, memo, imageUrl }
 let indexedWorlds = []; // { id, name, authorId, imageUrl }
 let indexedGroups = []; // { id, name, ownerId, imageUrl }
-let indexedFavAvatars = []; // { id, name, imageUrl }
 let indexedFavWorlds = []; // { id, name, imageUrl }
 
 /**
@@ -135,12 +133,6 @@ function updateIndex(payload) {
             f._normalized = f.name ? removeConfusables(f.name) : '';
         }
     }
-    if (payload.avatars) {
-        indexedAvatars = payload.avatars;
-        for (const a of indexedAvatars) {
-            a._normalized = a.name ? removeConfusables(a.name) : '';
-        }
-    }
     if (payload.worlds) {
         indexedWorlds = payload.worlds;
         for (const w of indexedWorlds) {
@@ -151,12 +143,6 @@ function updateIndex(payload) {
         indexedGroups = payload.groups;
         for (const g of indexedGroups) {
             g._normalized = g.name ? removeConfusables(g.name) : '';
-        }
-    }
-    if (payload.favAvatars) {
-        indexedFavAvatars = payload.favAvatars;
-        for (const a of indexedFavAvatars) {
-            a._normalized = a.name ? removeConfusables(a.name) : '';
         }
     }
     if (payload.favWorlds) {
@@ -178,10 +164,6 @@ function searchFriends(query, cleanQuery, comparer, limit = 10) {
             match = localeIncludes(ctx.memo, query, comparer);
             if (match) matchedField = 'memo';
         }
-        if (!match && ctx.note && query.length >= 2) {
-            match = localeIncludes(ctx.note, query, comparer);
-            if (match) matchedField = 'note';
-        }
         if (match) {
             results.push({
                 id: ctx.id,
@@ -189,7 +171,6 @@ function searchFriends(query, cleanQuery, comparer, limit = 10) {
                 type: 'friend',
                 imageUrl: ctx.imageUrl,
                 memo: ctx.memo || '',
-                note: ctx.note || '',
                 matchedField
             });
         }
@@ -237,8 +218,6 @@ function handleSearch(payload) {
             payload: {
                 seq,
                 friends: [],
-                ownAvatars: [],
-                favAvatars: [],
                 ownWorlds: [],
                 favWorlds: [],
                 ownGroups: [],
@@ -257,16 +236,12 @@ function handleSearch(payload) {
     const cleanQuery = removeWhitespace(query);
 
     const friends = searchFriends(query, cleanQuery, comparer);
-    const ownAvatars = searchItems(cleanQuery, indexedAvatars, 'avatar', comparer, 'authorId', currentUserId);
-    const favAvatars = searchItems(cleanQuery, indexedFavAvatars, 'avatar', comparer, null, null);
     const ownWorlds = searchItems(cleanQuery, indexedWorlds, 'world', comparer, 'authorId', currentUserId);
     const favWorlds = searchItems(cleanQuery, indexedFavWorlds, 'world', comparer, null, null);
     const ownGroups = searchItems(cleanQuery, indexedGroups, 'group', comparer, 'ownerId', currentUserId);
     const joinedGroups = searchItems(cleanQuery, indexedGroups, 'group', comparer, null, null);
 
     // Deduplicate favorites against own
-    const ownAvatarIds = new Set(ownAvatars.map((r) => r.id));
-    const dedupedFavAvatars = favAvatars.filter((r) => !ownAvatarIds.has(r.id));
     const ownWorldIds = new Set(ownWorlds.map((r) => r.id));
     const dedupedFavWorlds = favWorlds.filter((r) => !ownWorldIds.has(r.id));
     const ownGroupIds = new Set(ownGroups.map((r) => r.id));
@@ -277,8 +252,6 @@ function handleSearch(payload) {
         payload: {
             seq,
             friends,
-            ownAvatars,
-            favAvatars: dedupedFavAvatars,
             ownWorlds,
             favWorlds: dedupedFavWorlds,
             ownGroups,

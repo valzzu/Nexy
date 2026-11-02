@@ -1283,14 +1283,6 @@
                 </div>
             </div>
             <div class="x-containerbottom">
-                <template v-if="nowPlaying.playing">
-                    <span style="float: right; padding-left: 10px">{{ nowPlaying.remainingText }}</span>
-                    <MarqueeText>{{ nowPlaying.name }}</MarqueeText>
-                    <div
-                        class="np-progress-bar"
-                        style="margin-left: 5px"
-                        :style="{ width: nowPlaying.percentage + '%' }"></div>
-                </template>
                 <div style="float: right">
                     <span v-if="!config?.minimalFeed" style="display: inline-block; margin-right: 5px">{{
                         t('vr.status.timer')
@@ -1329,141 +1321,7 @@
             </div>
         </div>
         <!-- HMD Overlay -->
-        <div class="hmd">
-            <svg class="np-progress-circle">
-                <circle
-                    class="np-progress-circle-stroke"
-                    cx="60"
-                    cy="60"
-                    stroke="white"
-                    r="30"
-                    fill="transparent"
-                    stroke-width="60"></circle>
-            </svg>
-            <div class="hud-feed">
-                <div v-for="(feed, index) in hudFeed" :key="`hud-${index}-${feed.displayName}-${feed.time}`">
-                    <div class="item" :class="{ friend: feed.isFriend, favorite: feed.isFavorite }">
-                        <span v-if="feed.isMaster">👑</span><span v-if="feed.isModerator">⚔️</span
-                        ><strong class="name" v-text="feed.displayName" :style="{ color: feed.colour }"></strong>
-                        <template v-if="feed.type === 'ChangeAvatar'">
-                            <span style="margin-left: 10px; color: var(--vr-text-secondary)">ChangeAvatar</span>
-                            <span v-if="!feed.inCache" style="color: var(--vr-text-muted); margin-left: 10px"
-                                ><Loader2 class="is-loading inline-block h-4 w-4" />
-                            </span>
-                            <span v-text="feed.avatar.name" style="margin-left: 10px"></span>
-                            <span
-                                v-if="feed.avatar.releaseStatus === 'public'"
-                                style="margin-left: 10px; color: var(--status-online)"
-                                >(Public)</span
-                            >
-                            <span
-                                v-else-if="feed.avatar.releaseStatus === 'private'"
-                                style="margin-left: 10px; color: var(--status-askme)"
-                                >(Private)</span
-                            >
-                        </template>
-                        <template v-else-if="feed.type === 'ChangeStatus'">
-                            <span style="margin-left: 10px; color: var(--vr-text-secondary)">ChangeStatus</span>
-                            <span v-if="feed.status !== feed.previousStatus">
-                                <i
-                                    class="x-user-status"
-                                    :class="statusClass(feed.previousStatus)"
-                                    style="margin-left: 10px; width: 20px; height: 20px"></i>
-                                <span>
-                                    <ArrowRight class="mx-1 inline-block h-4 w-4" />
-                                </span>
-                                <i
-                                    class="x-user-status"
-                                    :class="statusClass(feed.status)"
-                                    style="width: 20px; height: 20px"></i>
-                            </span>
-                            <span
-                                v-if="feed.statusDescription !== feed.previousStatusDescription"
-                                v-text="feed.statusDescription"
-                                style="margin-left: 10px"></span>
-                        </template>
-                        <template v-else-if="feed.type === 'ChangeGroup'">
-                            <span style="margin-left: 10px; color: var(--vr-text-secondary)">ChangeGroup</span>
-                            <span v-text="feed.groupName" style="margin-left: 10px"></span>
-                        </template>
-                        <template v-else-if="feed.type === 'ChatBoxMessage'">
-                            <span style="margin-left: 10px; color: var(--vr-text-secondary)">ChatBox</span>
-                            <span v-text="feed.text" style="margin-left: 10px; white-space: normal"></span>
-                        </template>
-                        <template v-else-if="feed.type === 'PortalSpawn'">
-                            <span style="margin-left: 10px; color: var(--vr-text-secondary)">PortalSpawn</span>
-                            <VrLocation
-                                :location="feed.location"
-                                :hint="feed.worldName"
-                                :grouphint="feed.groupName"
-                                :link="false"
-                                style="margin-left: 10px"></VrLocation>
-                        </template>
-                        <template v-else-if="feed.type === 'OnPlayerJoined'">
-                            <span style="margin-left: 10px; color: var(--vr-text-secondary)">has joined</span>
-                            <span
-                                v-if="feed.platform === 'Desktop'"
-                                style="color: var(--status-joinme); margin-left: 10px"
-                                >Desktop</span
-                            >
-                            <span
-                                v-else-if="feed.platform === 'VR'"
-                                style="color: var(--status-joinme); margin-left: 10px"
-                                >VR</span
-                            >
-                            <span
-                                v-else-if="feed.platform === 'Quest'"
-                                style="color: var(--platform-quest); margin-left: 10px"
-                                >Android</span
-                            >
-                            <span
-                                v-else-if="feed.platform === 'iOS'"
-                                style="color: var(--platform-ios); margin-left: 10px"
-                                >iOS</span
-                            >
-                            <span v-if="!feed.inCache" style="color: var(--vr-text-muted); margin-left: 10px"
-                                ><Download class="inline-block h-4 w-4" />
-                            </span>
-                            <span v-text="feed.avatar.name" style="margin-left: 10px"></span>
-                        </template>
-                        <template v-else-if="feed.type === 'SpawnEmoji'">
-                            <span style="margin-left: 10px; color: var(--vr-text-secondary)">SpawnEmoji</span>
-                            <span v-text="feed.text" style="margin-left: 10px"></span>
-                        </template>
-                        <span
-                            v-else-if="feed.color === 'yellow'"
-                            v-text="feed.text"
-                            style="color: yellow; margin-left: 10px"></span>
-                        <span
-                            v-else
-                            style="margin-left: 10px; color: var(--vr-text-secondary)"
-                            v-text="feed.text"></span>
-                        <template v-if="feed.combo > 1">
-                            <span class="combo" style="margin-left: 10px">x{{ feed.combo }}</span>
-                        </template>
-                    </div>
-                </div>
-            </div>
-            <div class="hud-timeout" v-if="hudTimeout.length > 0">
-                <div class="hud-timeout-feed">
-                    <div v-for="(feed, index) in hudTimeout" :key="`timeout-${index}-${feed.displayName}-${feed.time}`">
-                        <p class="item">({{ feed.time }}s) {{ feed.displayName }}</p>
-                    </div>
-                </div>
-                <svg
-                    version="1.1"
-                    xmlns="http://www.w3.org/2000/svg"
-                    xmlns:xlink="http://www.w3.org/1999/xlink"
-                    xml:space="preserve">
-                    <path
-                        fill="#ED1B24"
-                        d="M68.6,96.5L87,78.1c1.6-1.6,1.6-4.1,0-5.7s-4.1-1.6-5.7,0L62.9,90.9L44.5,72.5l18.4-18.4c1.6-1.6,1.6-4.1,0-5.7c-1.6-1.6-4.1-1.6-5.7,0L38.9,66.8l-6.4-6.4L21.2,71.8C11,82,9.7,97.9,17.4,109.5L0,126.9l8.5,8.5L25.9,118c11.6,7.7,27.5,6.4,37.8-3.8L75,102.9C75,102.9,68.6,96.5,68.6,96.5z"></path>
-                    <path
-                        fill="#ED1B24"
-                        d="M102.9,75l11.3-11.3c10.3-10.3,11.5-26.1,3.8-37.8l17.4-17.4L126.9,0l-17.4,17.4C97.9,9.7,82,11,71.8,21.2L60.5,32.5C102,74,60.8,32.9,102.9,75z"></path>
-                </svg>
-            </div>
-        </div>
+        <div class="hmd"></div>
     </div>
 </template>
 
@@ -1474,7 +1332,6 @@
         Ban,
         Check,
         Circle,
-        Download,
         Footprints,
         GraduationCap,
         Heart,
@@ -1499,14 +1356,12 @@
     import { nextTick, onBeforeUnmount, onMounted, reactive, toRefs } from 'vue';
     import { useI18n } from 'vue-i18n';
 
-    import MarqueeText from 'vue-marquee-text-component';
     import Noty from 'noty';
 
     import { escapeTag, escapeTagRecursive } from '../shared/utils/base/string';
     import { changeHtmlLangAttribute } from '../shared/utils/base/ui';
     import { displayLocation } from '../shared/utils/location';
     import { loadLocalizedStrings } from '../plugins/i18n';
-    import { removeFromArray } from '../shared/utils/base/array';
     import { timeToText } from '../shared/utils/base/format';
 
     import VrLocation from './components/VrLocation.vue';
@@ -1532,23 +1387,12 @@
         customInfo: '',
         config: {},
         onlineFriendCount: 0,
-        nowPlaying: {
-            url: '',
-            name: '',
-            length: 0,
-            startTime: 0,
-            elapsed: 0,
-            percentage: 0,
-            remainingText: '',
-            playing: false
-        },
         lastLocation: {
             date: 0,
             location: '',
             name: '',
             playerList: [],
             friendList: [],
-            progressPie: false,
             onlineFor: 0
         },
         lastLocationTimer: '',
@@ -1557,9 +1401,6 @@
         devices: [],
         deviceCount: 0,
         notificationOpacity: 100,
-        hudFeed: [],
-        hudTimeout: [],
-        cleanHudFeedLoopStatus: false,
         isHmdDisabled: false,
         isWristDisabled: false
     });
@@ -1567,30 +1408,23 @@
     let isUnmounted = false;
     let updateStatsLoopTimeoutId = null;
     let updateVrElectronLoopTimeoutId = null;
-    let cleanHudFeedLoopTimeoutId = null;
 
     onMounted(() => {
         window.$vr = {};
         window.$vr.configUpdate = configUpdate;
         window.$vr.updateOnlineFriendCount = updateOnlineFriendCount;
-        window.$vr.nowPlayingUpdate = nowPlayingUpdate;
         window.$vr.lastLocationUpdate = lastLocationUpdate;
         window.$vr.wristFeedUpdate = wristFeedUpdate;
         window.$vr.refreshCustomScript = refreshCustomScript;
         window.$vr.playNoty = playNoty;
         window.$vr.statusClass = statusClass;
         window.$vr.notyClear = notyClear;
-        window.$vr.addEntryHudFeed = addEntryHudFeed;
-        window.$vr.updateHudFeedTag = updateHudFeedTag;
-        window.$vr.updateHudTimeout = updateHudTimeout;
         window.$vr.setDatetimeFormat = setDatetimeFormat;
         window.$vr.setAppLanguage = setAppLanguage;
         window.$vr.trackingResultToClass = trackingResultToClass;
         window.$vr.updateFeedLength = updateFeedLength;
         window.$vr.updateStatsLoop = updateStatsLoop;
         window.$vr.updateVrElectronLoop = updateVrElectronLoop;
-        window.$vr.cleanHudFeedLoop = cleanHudFeedLoop;
-        window.$vr.cleanHudFeed = cleanHudFeed;
 
         window.$vr.vrState = vrState;
 
@@ -1616,10 +1450,6 @@
         if (updateVrElectronLoopTimeoutId !== null) {
             workerTimers.clearTimeout(updateVrElectronLoopTimeoutId);
             updateVrElectronLoopTimeoutId = null;
-        }
-        if (cleanHudFeedLoopTimeoutId !== null) {
-            workerTimers.clearTimeout(cleanHudFeedLoopTimeoutId);
-            cleanHudFeedLoopTimeoutId = null;
         }
 
         try {
@@ -1650,7 +1480,6 @@
      * @property {boolean} minimalFeed
      * @property {string} notificationPosition
      * @property {number} notificationTimeout
-     * @property {number} photonOverlayMessageTimeout
      * @property {string} notificationTheme
      * @property {boolean} backgroundEnabled
      * @property {boolean} dtHour12
@@ -1672,8 +1501,6 @@
         if (!vrState.config.overlayNotifications) {
             vrState.isHmdDisabled = false;
         }
-        vrState.hudFeed = [];
-        vrState.hudTimeout = [];
         setDatetimeFormat();
         setAppLanguage(vrState.config.appLanguage);
         updateFeedLength();
@@ -1701,26 +1528,6 @@
     /**
      * @param json
      */
-    function nowPlayingUpdate(json) {
-        vrState.nowPlaying = JSON.parse(json);
-        const circle = /** @type {SVGCircleElement} */ (document.querySelector('.np-progress-circle-stroke'));
-
-        if (vrState.lastLocation.progressPie && vrState.nowPlaying.percentage !== 0) {
-            circle.style.opacity = (0.5).toString();
-            const circumference = circle.getTotalLength();
-            circle.style.strokeDashoffset = (
-                circumference -
-                (vrState.nowPlaying.percentage / 100) * circumference
-            ).toString();
-        } else {
-            circle.style.opacity = '0';
-        }
-        updateFeedLength();
-    }
-
-    /**
-     * @param json
-     */
     function lastLocationUpdate(json) {
         vrState.lastLocation = JSON.parse(json);
     }
@@ -1743,9 +1550,6 @@
             if (vrState.deviceCount > 8) {
                 length -= 1;
             }
-        }
-        if (vrState.nowPlaying.playing) {
-            length -= 1;
         }
         if (length < vrState.wristFeed.length) {
             vrState.wristFeed.length = length;
@@ -2102,76 +1906,6 @@
         Noty.closeAll();
     }
 
-    function cleanHudFeedLoop() {
-        if (!vrState.cleanHudFeedLoopStatus) {
-            return;
-        }
-        cleanHudFeed();
-        if (vrState.hudFeed.length === 0) {
-            vrState.cleanHudFeedLoopStatus = false;
-            return;
-        }
-        if (isUnmounted) {
-            return;
-        }
-        cleanHudFeedLoopTimeoutId = workerTimers.setTimeout(() => cleanHudFeedLoop(), 500);
-    }
-
-    function cleanHudFeed() {
-        const dt = Date.now();
-        vrState.hudFeed.forEach((item) => {
-            if (item.time + vrState.config.photonOverlayMessageTimeout < dt) {
-                removeFromArray(vrState.hudFeed, item);
-            }
-        });
-        if (vrState.hudFeed.length > 10) {
-            vrState.hudFeed.length = 10;
-        }
-        if (!vrState.cleanHudFeedLoopStatus) {
-            vrState.cleanHudFeedLoopStatus = true;
-            cleanHudFeedLoop();
-        }
-    }
-
-    /**
-     * @param json
-     */
-    function addEntryHudFeed(json) {
-        const data = JSON.parse(json);
-        let combo = 1;
-        vrState.hudFeed.forEach((item) => {
-            if (item.displayName === data.displayName && item.text === data.text) {
-                combo = item.combo + 1;
-                removeFromArray(vrState.hudFeed, item);
-            }
-        });
-        vrState.hudFeed.unshift({
-            time: Date.now(),
-            combo,
-            ...data
-        });
-        cleanHudFeed();
-    }
-
-    /**
-     * @param json
-     */
-    function updateHudFeedTag(json) {
-        const ref = JSON.parse(json);
-        vrState.hudFeed.forEach((item) => {
-            if (item.userId === ref.userId) {
-                item.colour = ref.colour;
-            }
-        });
-    }
-
-    /**
-     * @param json
-     */
-    function updateHudTimeout(json) {
-        vrState.hudTimeout = JSON.parse(json);
-    }
-
     async function setDatetimeFormat() {
         vrState.currentCulture = await AppApiVr.CurrentCulture();
     }
@@ -2229,7 +1963,6 @@
         config,
         wristFeed,
         devices,
-        nowPlaying,
         lastLocation,
         lastLocationTimer,
         onlineForTimer,
@@ -2238,8 +1971,6 @@
         cpuUsageEnabled,
         cpuUsage,
         onlineFriendCount,
-        customInfo,
-        hudFeed,
-        hudTimeout
+        customInfo
     } = toRefs(vrState);
 </script>

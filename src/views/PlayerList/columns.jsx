@@ -1,7 +1,7 @@
 import Timer from '../../components/Timer.vue';
 import { Button } from '../../components/ui/button';
 import { TooltipWrapper } from '../../components/ui/tooltip';
-import { Apple, ArrowUpDown, IdCard, User, Monitor, Smartphone } from 'lucide-vue-next';
+import { ArrowUpDown, IdCard, User } from 'lucide-vue-next';
 
 import { getFaviconUrl, languageClass, openExternalLink, statusClass } from '../../shared/utils';
 import { i18n } from '../../plugins';
@@ -33,8 +33,6 @@ const sortButton = ({ column, label, descFirst = false }) => {
 const getInstanceIconWeight = (item) => {
     if (!item) return 0;
     let value = 0;
-    if (item.isMaster) value += 1000;
-    if (item.isModerator) value += 500;
     if (item.isFriend) value += 200;
     if (item.isBlocked) value -= 100;
     if (item.isMuted) value -= 50;
@@ -46,14 +44,7 @@ const getInstanceIconWeight = (item) => {
 
 const sortInstanceIcon = (a, b) => getInstanceIconWeight(b) - getInstanceIconWeight(a);
 
-export const createColumns = ({
-    randomUserColours,
-    chatboxUserBlacklist,
-    onBlockChatbox,
-    onUnblockChatbox,
-    sortAlphabetically,
-    userImage
-}) => {
+export const createColumns = ({ randomUserColours, sortAlphabetically, userImage }) => {
     const cols = [
         {
             id: 'avatar',
@@ -154,53 +145,6 @@ export const createColumns = ({
             }
         },
         {
-            id: 'photonId',
-            accessorFn: (row) => row?.photonId,
-            header: ({ column }) =>
-                sortButton({
-                    column,
-                    label: () => t('table.playerList.photonId')
-                }),
-            size: 110,
-            enableHiding: true,
-            meta: {
-                label: () => t('table.playerList.photonId'),
-                disableVisibilityToggle: true,
-                defaultHidden: true
-            },
-            sortFn: (rowA, rowB) => (rowA.original?.photonId ?? 0) - (rowB.original?.photonId ?? 0),
-            cell: ({ row }) => {
-                const userRef = row.original?.ref;
-                const userId = userRef?.id;
-                const isBlocked = userId && chatboxUserBlacklist?.value?.has?.(userId);
-
-                return (
-                    <div class="flex items-center">
-                        {userId ? (
-                            <button
-                                class={
-                                    isBlocked
-                                        ? 'mr-1 text-xs underline cursor-pointer text-destructive'
-                                        : 'mr-1 text-xs underline cursor-pointer'
-                                }
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (isBlocked) {
-                                        onUnblockChatbox(userId);
-                                    } else {
-                                        onBlockChatbox(userRef);
-                                    }
-                                }}
-                            >
-                                {isBlocked ? 'Unblock' : 'Block'}
-                            </button>
-                        ) : null}
-                        <span>{String(row.original?.photonId ?? '')}</span>
-                    </div>
-                );
-            }
-        },
-        {
             id: 'icon',
             header: ({ column }) =>
                 sortButton({
@@ -223,16 +167,6 @@ export const createColumns = ({
                 const r = row.original;
                 return (
                     <div class="flex items-center justify-center gap-1">
-                        {r?.isMaster ? (
-                            <TooltipWrapper side="left" content="Instance Master">
-                                <span>👑</span>
-                            </TooltipWrapper>
-                        ) : null}
-                        {r?.isModerator ? (
-                            <TooltipWrapper side="left" content="Moderator">
-                                <span>⚔️</span>
-                            </TooltipWrapper>
-                        ) : null}
                         {r?.isFriend ? (
                             <TooltipWrapper side="left" content="Friend">
                                 <span>💚</span>
@@ -258,55 +192,11 @@ export const createColumns = ({
                                 <span class="text-muted-foreground">💬</span>
                             </TooltipWrapper>
                         ) : null}
-                        {r?.timeoutTime ? (
-                            <TooltipWrapper side="left" content="Timeout">
-                                <span class="text-destructive">🔴{r.timeoutTime}s</span>
-                            </TooltipWrapper>
-                        ) : null}
                         {r?.ageVerified ? (
                             <TooltipWrapper side="left" content="18+ Verified">
                                 <IdCard class="h-4 w-4 x-tag-age-verification" />
                             </TooltipWrapper>
                         ) : null}
-                    </div>
-                );
-            }
-        },
-        {
-            id: 'platform',
-            header: () => t('table.playerList.platform'),
-            size: 90,
-            enableSorting: false,
-            meta: { label: () => t('table.playerList.platform') },
-            cell: ({ row }) => {
-                const userRef = row.original?.ref;
-                const platform = userRef?.$platform;
-                const inVRMode = row.original?.inVRMode;
-
-                const platformIcon =
-                    platform === 'standalonewindows' ? (
-                        <Monitor class="h-4 w-4 shrink-0 x-tag-platform-pc" />
-                    ) : platform === 'android' ? (
-                        <Smartphone class="h-4 w-4 shrink-0 x-tag-platform-quest" />
-                    ) : platform === 'ios' ? (
-                        <Apple class="h-4 w-4 shrink-0 x-tag-platform-ios" />
-                    ) : platform ? (
-                        <span>{String(platform)}</span>
-                    ) : null;
-
-                const mode =
-                    inVRMode === null || inVRMode === undefined
-                        ? null
-                        : inVRMode
-                          ? 'VR'
-                          : userRef?.last_platform === 'android' || userRef?.last_platform === 'ios'
-                            ? 'M'
-                            : 'D';
-
-                return (
-                    <div class="flex items-center gap-1">
-                        {platformIcon}
-                        {mode ? <span>{mode}</span> : null}
                     </div>
                 );
             }
@@ -371,23 +261,6 @@ export const createColumns = ({
                         ))}
                     </div>
                 );
-            }
-        },
-        {
-            id: 'note',
-            accessorFn: (row) => row?.ref?.note,
-            header: () => t('table.playerList.note'),
-            size: 150,
-            minSize: 20,
-            meta: {
-                stretch: true,
-                label: () => t('table.playerList.note')
-            },
-            enableSorting: false,
-            cell: ({ row }) => {
-                const note = row.original?.ref?.note;
-                const text = typeof note === 'string' || typeof note === 'number' ? String(note) : '';
-                return <span>{text}</span>;
             }
         },
         {

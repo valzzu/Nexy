@@ -48,7 +48,6 @@
                                                 'Rank',
                                                 'Status',
                                                 'Bio',
-                                                'Note',
                                                 'Memo'
                                             ]"
                                             :key="type"
@@ -381,7 +380,6 @@
         const signature = [
             ctx.ref.$memo ?? '',
             ctx.ref.displayName ?? '',
-            ctx.ref.note ?? '',
             friendProfiles.value.get(ctx.id)?.bio ?? '',
             ctx.ref.statusDescription ?? '',
             ctx.ref.$trustLevel ?? ''
@@ -396,7 +394,6 @@
             displayName: ctx.ref.displayName ?? '',
             memo: ctx.ref.$memo ?? '',
             normalizedDisplayName: removeConfusables(ctx.ref.displayName ?? ''),
-            note: ctx.ref.note ?? '',
             rank: String(ctx.ref.$trustLevel ?? '').toUpperCase(),
             status: ctx.ref.statusDescription ?? ''
         };
@@ -412,7 +409,7 @@
         friendsListDisplayData.value = [];
         let filters = friendsListSearchFilters.value.length
             ? [...friendsListSearchFilters.value]
-            : ['Display Name', 'Rank', 'Status', 'Bio', 'Note', 'Memo'];
+            : ['Display Name', 'Rank', 'Status', 'Bio', 'Memo'];
         const results = [];
         if (friendsListSearch.value) {
             query = friendsListSearch.value;
@@ -433,9 +430,6 @@
                 }
                 if (!match && filters.includes('Memo') && searchEntry.memo) {
                     match = localeIncludes(searchEntry.memo, query, stringComparer.value);
-                }
-                if (!match && filters.includes('Note') && searchEntry.note) {
-                    match = localeIncludes(searchEntry.note, query, stringComparer.value);
                 }
                 if (!match && filters.includes('Bio') && searchEntry.bio) {
                     match = localeIncludes(searchEntry.bio, query, stringComparer.value);

@@ -1,24 +1,15 @@
 import { reactive } from 'vue';
 import { toast } from 'vue-sonner';
 
-import {
-    useGalleryStore,
-    useInstanceStore,
-    useNotificationStore,
-    useSharedFeedStore,
-    useUiStore,
-    useUserStore
-} from '../stores';
+import { useNotificationStore, useUserStore } from '../stores';
 import { applyUser, applyCurrentUser, getCurrentUser } from '../coordinators/userCoordinator';
-import { onGroupLeft, applyGroup, handleGroupMember } from '../coordinators/groupCoordinator';
 import { handleFriendAdd, handleFriendDelete } from '../coordinators/friendRelationshipCoordinator';
-import { debounce, parseLocation } from '../shared/utils';
+import { parseLocation } from '../shared/utils';
 import { AppDebug } from './appConfig';
 import { presenceState, presenceToUser, toVrcNotification } from './nexvr/mappers';
 import { realtime } from './nexvr/realtime';
 import { startGameSession } from './nexvr/gameSession';
 import { startGroupInstances } from './nexvr/groupInstances';
-import { groupRequest } from '../api';
 import { request } from './request';
 import { runUpdateFriendFlow } from '../coordinators/friendPresenceCoordinator';
 import { runSetCurrentUserLocationFlow } from '../coordinators/locationCoordinator';
@@ -35,8 +26,6 @@ let detachRealtime = [];
 let knownNotificationIds = new Set();
 let pingTimer = null;
 let webSocketClosedGracefully = true;
-
-const refreshOwnedItems = debounce(() => useUserStore().getAllProductPurchases(), 5000);
 
 /**
  * Reactive WebSocket state for status bar telemetry.
@@ -292,12 +281,7 @@ export function reconnectWebSocket() {
 function handlePipeline(args) {
     const userStore = useUserStore();
 
-    const galleryStore = useGalleryStore();
     const notificationStore = useNotificationStore();
-    const sharedFeedStore = useSharedFeedStore();
-
-    const uiStore = useUiStore();
-    const instanceStore = useInstanceStore();
     const { type, content, err } = args.json;
     if (typeof err !== 'undefined') {
         console.error('PIPELINE: error', args);
@@ -331,46 +315,9 @@ function handlePipeline(args) {
             });
             break;
 
-        case 'notification-v2':
-            console.log('notification-v2', content);
-            notificationStore.handleNotificationV2({
-                json: content,
-                params: {
-                    notificationId: content.id
-                }
-            });
-            break;
-
-        case 'notification-v2-delete':
-            console.log('notification-v2-delete', content);
-            for (var id of content.ids) {
-                notificationStore.handleNotificationV2Hide(id);
-                notificationStore.handleNotificationSee(id);
-            }
-            break;
-
-        case 'notification-v2-update':
-            console.log('notification-v2-update', content);
-            notificationStore.handleNotificationV2Update({
-                json: content.updates,
-                params: {
-                    notificationId: content.id
-                }
-            });
-            break;
-
-        case 'see-notification':
-            notificationStore.handleNotificationSee(content);
-            break;
-
         case 'hide-notification':
             notificationStore.handleNotificationHide(content);
             notificationStore.handleNotificationSee(content);
-            break;
-
-        case 'response-notification':
-            notificationStore.handleNotificationHide(content.notificationId);
-            notificationStore.handleNotificationSee(content.notificationId);
             break;
 
         case 'friend-add':
@@ -511,140 +458,6 @@ function handlePipeline(args) {
             // content.instance // without worldId, this is useless
 
             runSetCurrentUserLocationFlow(content.location, content.travelingToLocation);
-            break;
-
-        case 'group-joined':
-            // var groupId = content.groupId;
-            // $app.onGroupJoined(groupId);
-            break;
-
-        case 'group-left':
-            onGroupLeft(content.groupId);
-            break;
-
-        case 'group-role-updated':
-            const groupId = content.role.groupId;
-            groupRequest.getGroup({ groupId, includeRoles: true }).then((args) => applyGroup(args.json));
-            console.log('group-role-updated', content);
-
-            // content {
-            //   role: {
-            //     createdAt: string,
-            //     description: string,
-            //     groupId: string,
-            //     id: string,
-            //     isManagementRole: boolean,
-            //     isSelfAssignable: boolean,
-            //     name: string,
-            //     order: number,
-            //     permissions: string[],
-            //     requiresPurchase: boolean,
-            //     requiresTwoFactor: boolean
-            break;
-
-        case 'group-member-updated':
-            var member = content.member;
-            if (!member) {
-                console.error('group-member-updated missing member', content);
-                break;
-            }
-            handleGroupMember({
-                json: member,
-                params: {
-                    groupId: member.groupId
-                }
-            });
-            console.log('group-member-updated', member);
-            break;
-
-        case 'instance-queue-joined':
-        case 'instance-queue-position':
-            var instanceId = content.instanceLocation;
-            var position = content.position ?? 0;
-            var queueSize = content.queueSize ?? 0;
-            instanceStore.instanceQueueUpdate(instanceId, position, queueSize);
-            break;
-
-        case 'instance-queue-ready':
-            // var expiry = Date.parse(content.expiry);
-            instanceStore.instanceQueueReady(content.instanceLocation);
-            break;
-
-        case 'instance-queue-left':
-            instanceStore.removeQueuedInstance(content.instanceLocation);
-            // $app.instanceQueueClear();
-            break;
-
-        case 'content-refresh':
-            var contentType = content.contentType;
-            console.log('content-refresh', content);
-            if (contentType === 'icon') {
-                if (galleryStore.galleryDialogVisible && !galleryStore.galleryDialogIconsLoading) {
-                    galleryStore.refreshVRCPlusIconsTable();
-                }
-            } else if (contentType === 'gallery') {
-                if (galleryStore.galleryDialogVisible && !galleryStore.galleryDialogGalleryLoading) {
-                    galleryStore.refreshGalleryTable();
-                }
-            } else if (contentType === 'emoji') {
-                if (galleryStore.galleryDialogVisible && !galleryStore.galleryDialogEmojisLoading) {
-                    galleryStore.refreshEmojiTable();
-                }
-            } else if (contentType === 'sticker') {
-                // on sticker upload
-            } else if (contentType === 'print') {
-                if (content.actionType === 'created') {
-                    galleryStore.tryDeleteOldPrints();
-                } else if (galleryStore.galleryDialogVisible && !galleryStore.galleryDialogPrintsLoading) {
-                    galleryStore.refreshPrintTable();
-                }
-            } else if (contentType === 'prints') {
-                // lol
-            } else if (contentType === 'avatar') {
-                // hmm, utilizing this might be too spamy and cause UI to move around
-            } else if (contentType === 'world') {
-                // hmm
-            } else if (contentType === 'created') {
-                // on avatar upload, might be gone now
-            } else if (contentType === 'avatargallery') {
-                // on avatar gallery image upload
-            } else if (contentType === 'invitePhoto') {
-                // on uploading invite photo
-            } else if (contentType === 'inventory') {
-                if (galleryStore.galleryDialogVisible && !galleryStore.galleryDialogInventoryLoading) {
-                    galleryStore.getInventory();
-                }
-                refreshOwnedItems();
-                // on consuming a bundle
-                // {contentType: 'inventory', itemId: 'inv_', itemType: 'prop', actionType: 'add'}
-            } else if (!contentType) {
-                console.log('content-refresh without contentType', content);
-            } else {
-                console.log('Unknown content-refresh type', content.contentType);
-            }
-            break;
-
-        case 'instance-closed':
-            // TODO: get worldName, groupName, hardClose
-            const noty = {
-                type: 'instance.closed',
-                location: content.instanceLocation,
-                message: 'Instance Closed',
-                created_at: new Date().toJSON()
-            };
-            if (
-                notificationStore.notificationTable.filters[0].value.length === 0 ||
-                notificationStore.notificationTable.filters[0].value.includes(noty.type)
-            ) {
-                uiStore.notifyMenu('notification');
-            }
-            notificationStore.queueNotificationNoty(noty);
-            notificationStore.appendNotificationTableEntry(noty);
-            sharedFeedStore.addEntry(noty);
-            break;
-
-        case 'economy-update':
-            userStore.setCurrentUserCredits(content?.walletBalance);
             break;
 
         default:

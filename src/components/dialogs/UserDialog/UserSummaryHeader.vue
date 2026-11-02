@@ -1,6 +1,5 @@
 <template>
     <div class="rounded-b-lg rounded-t-[15px] bg-(--profile-card) overflow-hidden flex flex-col relative">
-        <ProfileEffect :profile-effect="userDialog.ref.profileEffect" class="z-1" />
         <div class="relative aspect-17/6">
             <div
                 v-if="
@@ -46,22 +45,10 @@
                     <VolumeX class="h-6 w-6 text-red-400" />
                 </TooltipWrapper>
                 <TooltipWrapper
-                    v-if="userDialog.isMuteChat"
-                    :content="t('dialog.user.actions.moderation_disable_chatbox')"
-                    side="top">
-                    <MessageCircle class="h-6 w-6 text-red-400" />
-                </TooltipWrapper>
-                <TooltipWrapper
                     v-if="userDialog.isHideAvatar"
                     :content="t('dialog.user.actions.moderation_hide_avatar')"
                     side="top">
                     <User class="h-6 w-6 text-red-400" />
-                </TooltipWrapper>
-                <TooltipWrapper
-                    v-if="userDialog.isInteractOff"
-                    :content="t('dialog.user.actions.moderation_disable_avatar_interaction')"
-                    side="top">
-                    <Hand class="h-6 w-6 text-red-400" />
                 </TooltipWrapper>
             </div>
             <div class="absolute bottom-0 left-3 z-20 size-24 translate-y-1/2">
@@ -84,11 +71,8 @@
                     <!-- no picture set: their initial, as everywhere else -->
                     <img v-else class="w-full h-full object-cover" :src="defaultUserImage(userDialog.ref)" alt="" />
                 </div>
-                <IconFrame :icon-frame="userDialog.ref.iconFrame" class="z-2" />
             </div>
         </div>
-
-        <NameplateEffect :nameplate-effect="userDialog.ref.nameplateEffect" />
 
         <div
             class="relative isolate flex flex-col gap-2 px-3 pb-3 pt-15 z-40 pointer-events-none *:pointer-events-auto">
@@ -117,12 +101,6 @@
                             v-text="userDialog.ref.displayName"
                             :title="userDialog.ref.displayName"
                             @click="copyUserDisplayName(userDialog.ref.displayName)"></span>
-                        <TooltipWrapper
-                            v-if="userDialog.publicProfileRef?.isEconomyCreator"
-                            side="top"
-                            :content="t('dialog.user.info.economy_creator')">
-                            <BadgeCheck class="h-3.5 w-3.5 text-[#3b82f6]" />
-                        </TooltipWrapper>
                         <span v-if="userDialog.ref.pronouns" class="basis-full h-0"></span>
                         <TooltipWrapper v-if="userDialog.ref.pronouns" side="top" :content="t('dialog.user.pronouns')">
                             <span
@@ -318,201 +296,6 @@
                     <span class="inline-flex items-center leading-none">{{ item.value }} ({{ item.key }})</span>
                 </Badge>
             </div>
-
-            <div
-                v-if="userDialog.publicProfileRef?.badges && userDialog.publicProfileRef?.badges.length"
-                class="flex flex-wrap gap-1.5">
-                <TooltipWrapper v-for="badge in userDialog.publicProfileRef?.badges" :key="badge.badgeId" side="top">
-                    <template #content>
-                        <span>{{ badge.badgeName }}</span>
-                        <span v-if="badge.hidden">&nbsp;(Hidden)</span>
-                    </template>
-                    <div style="display: inline-block">
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <img
-                                    class="cursor-pointer hover:grayscale-0"
-                                    :src="badge.badgeImageUrl"
-                                    style="
-                                        height: 30px;
-                                        width: 30px;
-                                        border-radius: var(--radius-sm);
-                                        object-fit: cover;
-                                    "
-                                    :class="{ grayscale: badge.hidden }"
-                                    loading="lazy" />
-                            </PopoverTrigger>
-                            <PopoverContent side="right" class="w-75">
-                                <img
-                                    :src="badge.badgeImageUrl"
-                                    :class="['cursor-pointer', 'max-w-full', 'max-h-full']"
-                                    @click="showFullscreenImageDialog(badge.badgeImageUrl)"
-                                    loading="lazy" />
-                                <br />
-                                <div style="display: block; width: 275px; word-break: normal">
-                                    <span>{{ badge.badgeName }}</span>
-                                    <br />
-                                    <span class="x-grey text-xs">{{ badge.badgeDescription }}</span>
-                                    <br />
-                                    <span v-if="badge.assignedAt" class="x-grey font-mono text-xs">
-                                        {{ t('dialog.user.badges.assigned') }}:
-                                        {{ formatDateFilter(badge.assignedAt, 'long') }}
-                                    </span>
-                                    <template v-if="userDialog.id === currentUser.id">
-                                        <br />
-                                        <label class="inline-flex items-center gap-2" style="margin-top: 6px">
-                                            <Checkbox
-                                                v-model="badge.hidden"
-                                                @update:modelValue="toggleBadgeVisibility(badge)" />
-                                            <span>{{ t('dialog.user.badges.hidden') }}</span>
-                                        </label>
-                                        <br />
-                                        <label class="inline-flex items-center gap-2">
-                                            <Checkbox
-                                                v-model="badge.showcased"
-                                                @update:modelValue="toggleBadgeShowcased(badge)" />
-                                            <span>{{ t('dialog.user.badges.showcased') }}</span>
-                                        </label>
-                                    </template>
-                                </div>
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                </TooltipWrapper>
-            </div>
-
-            <div
-                v-if="showVrchatOnlySections && currentUser.id === userDialog.id"
-                class="border-t border-muted-foreground/20 flex flex-col gap-1.5">
-                <div
-                    class="flex justify-between items-center text-xs cursor-pointer hover:text-foreground mt-1.5"
-                    @click="toggleAvatarCopying">
-                    <span class="text-muted-foreground">{{ t('dialog.user.info.avatar_cloning') }}</span>
-                    <span class="text-muted-foreground">{{
-                        currentUser.allowAvatarCopying
-                            ? t('dialog.user.info.avatar_cloning_allow')
-                            : t('dialog.user.info.avatar_cloning_deny')
-                    }}</span>
-                </div>
-                <div
-                    class="flex justify-between items-center text-xs cursor-pointer hover:text-foreground"
-                    @click="toggleAllowBooping">
-                    <span class="text-muted-foreground">{{ t('dialog.user.info.booping') }}</span>
-                    <span class="text-muted-foreground">{{
-                        currentUser.isBoopingEnabled
-                            ? t('dialog.user.info.avatar_cloning_allow')
-                            : t('dialog.user.info.avatar_cloning_deny')
-                    }}</span>
-                </div>
-                <div
-                    class="flex justify-between items-center text-xs cursor-pointer hover:text-foreground"
-                    @click="toggleSharedConnectionsOptOut">
-                    <span class="text-muted-foreground">{{ t('dialog.user.info.show_mutual_friends') }}</span>
-                    <span class="text-muted-foreground">{{
-                        !currentUser.hasSharedConnectionsOptOut
-                            ? t('dialog.user.info.avatar_cloning_allow')
-                            : t('dialog.user.info.avatar_cloning_deny')
-                    }}</span>
-                </div>
-                <div
-                    class="flex justify-between items-center text-xs cursor-pointer hover:text-foreground"
-                    @click="toggleDiscordFriendsOptOut">
-                    <span class="text-muted-foreground">{{ t('dialog.user.info.show_discord_connections') }}</span>
-                    <span class="text-muted-foreground">{{
-                        !currentUser.hasDiscordFriendsOptOut
-                            ? t('dialog.user.info.avatar_cloning_allow')
-                            : t('dialog.user.info.avatar_cloning_deny')
-                    }}</span>
-                </div>
-                <div
-                    class="flex justify-between items-center text-xs cursor-pointer hover:text-foreground"
-                    @click="toggleReducedProfileAnimations">
-                    <span class="text-muted-foreground">{{ t('dialog.user.info.reduced_profile_animations') }}</span>
-                    <span class="text-muted-foreground">{{
-                        currentUserClientConfig.accessReduceDecorAnim
-                            ? t('dialog.user.info.avatar_cloning_allow')
-                            : t('dialog.user.info.avatar_cloning_deny')
-                    }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div v-if="showVrchatOnlySections" class="rounded-xl bg-(--profile-card) p-3 flex flex-col mt-2">
-        <div
-            class="text-[10px] font-bold uppercase tracking-wide mb-2 pb-2 border-b border-muted-foreground/20"
-            :style="{ color: userDialog.theme.subtextColor }">
-            {{ t('dialog.user.info.avatar_info') }}
-            <span class="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                <TooltipWrapper v-if="!hasAvatarSet" side="right" :content="t('dialog.user.info.icon_hides_avatar')">
-                    <Info class="inline-block h-3 w-3 align-middle" :style="{ color: userDialog.theme.iconColor }" />
-                </TooltipWrapper>
-            </span>
-        </div>
-        <div class="text-xs flex justify-between gap-2">
-            <template v-if="avatarImageUrl">
-                <AvatarInfo
-                    :key="avatarImageUrl"
-                    :imageurl="avatarImageUrl"
-                    :userid="userDialog.id"
-                    :avatartags="userDialog.ref.currentAvatarTags"
-                    style="display: inline-block" />
-                <img
-                    class="h-12 w-16 rounded-lg object-cover cursor-pointer flex-none"
-                    :src="avatarImageUrl"
-                    @click="showFullscreenImageDialog(avatarImageUrl)"
-                    loading="lazy" />
-            </template>
-            <template v-else>
-                <div class="text-xs text-muted-foreground">—</div>
-            </template>
-        </div>
-    </div>
-
-    <div v-if="showVrchatOnlySections" class="rounded-xl bg-(--profile-card) p-3 flex flex-col mt-2">
-        <div
-            class="text-[10px] font-bold uppercase tracking-wide mb-2 pb-2 border-b border-muted-foreground/20"
-            :style="{ color: userDialog.theme.subtextColor }">
-            {{ t('dialog.user.info.represented_group') }}
-        </div>
-        <div
-            v-if="
-                userDialog.isRepresentedGroupLoading ||
-                (userDialog.representedGroup && userDialog.representedGroup.isRepresenting)
-            "
-            class="flex items-center gap-2.5 cursor-pointer"
-            @click="showGroupDialog(userDialog.representedGroup.groupId)">
-            <div class="flex-1 min-w-0">
-                <div class="text-xs font-medium truncate">
-                    <span v-if="userDialog.representedGroup.ownerId === userDialog.id" class="mr-1">👑</span>
-                    <span v-text="userDialog.representedGroup.name"></span>
-                </div>
-                <div class="text-xs text-muted-foreground">({{ userDialog.representedGroup.memberCount }})</div>
-            </div>
-            <div style="display: inline-block; flex: none; margin-right: 0">
-                <Avatar
-                    class="cursor-pointer size-10! rounded-lg!"
-                    :style="{ background: userDialog.isRepresentedGroupLoading ? 'var(--muted)' : '' }"
-                    @click.stop="showFullscreenImageDialog(userDialog.representedGroup.iconUrl)">
-                    <AvatarImage
-                        :src="userDialog.representedGroup.$thumbnailUrl"
-                        @load="userDialog.isRepresentedGroupLoading = false"
-                        @error="userDialog.isRepresentedGroupLoading = false" />
-                    <AvatarFallback class="rounded-lg!">
-                        <Image class="size-4 text-muted-foreground" />
-                    </AvatarFallback>
-                </Avatar>
-            </div>
-        </div>
-        <div v-else class="text-xs text-muted-foreground">—</div>
-
-        <div class="mt-2">
-            <img
-                v-if="userDialog.representedGroup.bannerUrl"
-                class="w-full rounded-lg object-cover cursor-pointer h-[80px] aspect-6/1"
-                :src="userDialog.representedGroup.bannerUrl"
-                @click="showFullscreenImageDialog(userDialog.representedGroup.bannerUrl)"
-                loading="lazy" />
         </div>
     </div>
 </template>
@@ -523,19 +306,16 @@
         BadgeCheck,
         ChevronDown,
         Image,
-        Info,
         Monitor,
         Network,
         Shield,
         ShieldAlert,
         ShieldCheck,
         Smartphone,
-        Hand,
         UserPlus,
         Users,
         XCircle,
         VolumeX,
-        MessageCircle,
         Sparkles,
         User
     } from 'lucide-vue-next';
@@ -543,9 +323,7 @@
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 
-    import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
     import {
-        convertFileUrlToImageUrl,
         copyToClipboard,
         defaultUserImage,
         formatDateFilter,
@@ -554,17 +332,10 @@
         replaceBioSymbols
     } from '../../../shared/utils';
     import { useUserDisplay } from '../../../composables/useUserDisplay';
-    import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
     import { useGalleryStore, useUserStore } from '../../../stores';
     import { Badge } from '../../ui/badge';
-    import { Checkbox } from '../../ui/checkbox';
-    import IconFrame from '../../IconFrame.vue';
-    import NameplateEffect from '../../NameplateEffect.vue';
-    import ProfileEffect from '../../ProfileEffect.vue';
 
     import UserActionDropdown from './UserActionDropdown.vue';
-    import { showGroupDialog } from '@/coordinators/groupCoordinator';
-    import { getAvatarName } from '@/coordinators/avatarCoordinator';
 
     const props = defineProps({
         getUserStateText: {
@@ -572,14 +343,6 @@
             required: true
         },
         copyUserDisplayName: {
-            type: Function,
-            required: true
-        },
-        toggleBadgeVisibility: {
-            type: Function,
-            required: true
-        },
-        toggleBadgeShowcased: {
             type: Function,
             required: true
         },
@@ -591,22 +354,11 @@
 
     const { t } = useI18n();
 
-    const { userDialog, currentUser, currentUserClientConfig } = storeToRefs(useUserStore());
-    const {
-        toggleSharedConnectionsOptOut,
-        toggleDiscordFriendsOptOut,
-        toggleAvatarCopying,
-        toggleAllowBooping,
-        toggleReducedProfileAnimations
-    } = useUserStore();
+    const { userDialog, currentUser } = storeToRefs(useUserStore());
 
     const { showFullscreenImageDialog } = useGalleryStore();
     const { userStatusClass } = useUserDisplay();
     const { showEditProfileDialog } = useUserStore();
-
-    // VRChat account toggles (avatar cloning, booping...), avatar info and
-    // represented group have no NexVR equivalent
-    const showVrchatOnlySections = false;
 
     // NexVR profile badges, as nexvr.net shows them next to the name
     const nexvrBadges = computed(() => userDialog.value.ref?.$nexvr?.badges ?? []);
@@ -629,28 +381,6 @@
 
     const profileImageError = ref(false);
     const userIconError = ref(false);
-    const hasAvatarSet = ref(false);
-    const avatarImageUrl = computed(() => {
-        if (userDialog.value.id === currentUser.value.id) {
-            return currentUser.value.currentAvatarImageUrl;
-        }
-
-        return hasAvatarSet.value ? userDialog.value.publicProfileRef?.iconUrl : '';
-    });
-
-    watch(
-        () => userDialog.value.publicProfileRef?.iconUrl,
-        async (iconUrl) => {
-            hasAvatarSet.value = false;
-            // check if image is from an avatar
-            const avatarInfo = await getAvatarName(iconUrl);
-            if (iconUrl === userDialog.value.publicProfileRef?.iconUrl) {
-                hasAvatarSet.value = Boolean(avatarInfo.ownerId);
-            }
-        },
-        { immediate: true }
-    );
-
     watch(
         () => userDialog.value.id,
         () => {
@@ -661,7 +391,5 @@
 
     const getUserStateText = props.getUserStateText;
     const copyUserDisplayName = props.copyUserDisplayName;
-    const toggleBadgeVisibility = props.toggleBadgeVisibility;
-    const toggleBadgeShowcased = props.toggleBadgeShowcased;
     const userDialogCommand = props.userDialogCommand;
 </script>

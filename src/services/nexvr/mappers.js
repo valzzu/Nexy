@@ -202,7 +202,9 @@ function baseUser(user) {
         ageVerified: Boolean(user.ageVerification),
         ageVerificationStatus: user.ageBand || '',
         badges: [],
-        last_platform: 'standalonewindows',
+        // NexVR has no player platform: it travels over the Basis network,
+        // not the API, and the game does not log it either
+        last_platform: '',
         // NexVR-only fields, kept for anything that wants the original values
         $nexvr: {
             socialRank: user.socialRank || 'E',
@@ -291,7 +293,7 @@ export function presenceToUser(presence, cachedTags = []) {
         state,
         status,
         location,
-        platform: state === 'online' ? 'standalonewindows' : '',
+        platform: '',
         $friendsSince: presence.friendsSince || ''
     };
 }
@@ -387,7 +389,7 @@ export function toVrcCurrentUser(me, friends, friendsComplete = true) {
             travelingToWorld: '',
             travelingToInstance: '',
             groups: [],
-            platform: 'standalonewindows',
+            platform: '',
             status: PREFERENCE_STATUS[me.userPreferenceStatus] ?? 'active'
         },
         $nexvr: {

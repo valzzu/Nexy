@@ -1,7 +1,7 @@
 <script setup>
     import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
     import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-    import { Globe, Image, Users } from 'lucide-vue-next';
+    import { Globe, Users } from 'lucide-vue-next';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 
@@ -16,8 +16,6 @@
         isOpen,
         query,
         friendResults,
-        ownAvatarResults,
-        favoriteAvatarResults,
         ownWorldResults,
         favoriteWorldResults,
         ownGroupResults,
@@ -56,13 +54,6 @@
                                     t('side_panel.search_scope_all')
                                 }}</span>
                             </CommandItem>
-                            <CommandItem :value="'hint-avatars'" disabled class="gap-3 opacity-70">
-                                <Image class="size-4" />
-                                <span class="flex-1">{{ t('side_panel.search_avatars') }}</span>
-                                <span class="text-xs text-muted-foreground">{{
-                                    t('side_panel.search_scope_avatars')
-                                }}</span>
-                            </CommandItem>
                             <CommandItem :value="'hint-worlds'" disabled class="gap-3 opacity-70">
                                 <Globe class="size-4" />
                                 <span class="flex-1">{{ t('side_panel.search_worlds') }}</span>
@@ -89,7 +80,7 @@
                             <CommandItem
                                 v-for="item in friendResults"
                                 :key="item.id"
-                                :value="[item.name, item.memo, item.note, item.id].filter(Boolean).join(' ')"
+                                :value="[item.name, item.memo, item.id].filter(Boolean).join(' ')"
                                 class="gap-3"
                                 @select="handleSelect(item)">
                                 <img
@@ -107,48 +98,7 @@
                                         class="truncate text-xs text-muted-foreground">
                                         Memo: {{ item.memo }}
                                     </span>
-                                    <span
-                                        v-if="item.matchedField !== 'name' && item.note"
-                                        class="truncate text-xs text-muted-foreground">
-                                        Note: {{ item.note }}
-                                    </span>
                                 </div>
-                            </CommandItem>
-                        </CommandGroup>
-
-                        <CommandGroup v-if="ownAvatarResults.length > 0" :heading="t('side_panel.search_own_avatars')">
-                            <CommandItem
-                                v-for="item in ownAvatarResults"
-                                :key="item.id"
-                                :value="item.name + ' own ' + item.id"
-                                class="gap-3"
-                                @select="handleSelect(item)">
-                                <img
-                                    v-if="item.imageUrl"
-                                    :src="item.imageUrl"
-                                    class="size-6 rounded object-cover"
-                                    loading="lazy" />
-                                <Image v-else class="size-4" />
-                                <span class="truncate">{{ item.name }}</span>
-                            </CommandItem>
-                        </CommandGroup>
-
-                        <CommandGroup
-                            v-if="favoriteAvatarResults.length > 0"
-                            :heading="t('side_panel.search_fav_avatars')">
-                            <CommandItem
-                                v-for="item in favoriteAvatarResults"
-                                :key="item.id"
-                                :value="item.name + ' fav ' + item.id"
-                                class="gap-3"
-                                @select="handleSelect(item)">
-                                <img
-                                    v-if="item.imageUrl"
-                                    :src="item.imageUrl"
-                                    class="size-6 rounded object-cover"
-                                    loading="lazy" />
-                                <Image v-else class="size-4" />
-                                <span class="truncate">{{ item.name }}</span>
                             </CommandItem>
                         </CommandGroup>
 

@@ -23,10 +23,6 @@
                     <Clock class="size-3.5 text-muted-foreground" />
                 </ContextMenuShortcut>
             </ContextMenuItem>
-            <ContextMenuItem :disabled="!currentUser?.isBoopingEnabled" @click="handleSendBoop">
-                <Hand class="size-4" />
-                {{ t('dialog.user.actions.send_boop') }}
-            </ContextMenuItem>
             <ContextMenuSeparator v-if="isOnline && hasLocation" />
             <ContextMenuItem v-if="isOnline && hasLocation" :disabled="!canJoin" @click="handleJoin">
                 <LogIn class="size-4" />
@@ -42,7 +38,7 @@
 </template>
 
 <script setup>
-    import { Clock, ExternalLink, LogIn, Mail, MessageSquare, Hand } from 'lucide-vue-next';
+    import { Clock, ExternalLink, LogIn, Mail, MessageSquare } from 'lucide-vue-next';
     import { computed } from 'vue';
     import { storeToRefs } from 'pinia';
     import { toast } from 'vue-sonner';
@@ -57,7 +53,7 @@
         ContextMenuTrigger
     } from './ui/context-menu';
     import { isRealInstance, parseLocation } from '../shared/utils';
-    import { useGameStore, useLaunchStore, useLocationStore, useUserStore } from '../stores';
+    import { useGameStore, useLaunchStore, useLocationStore } from '../stores';
     import { instanceRequest, notificationRequest, queryRequest } from '../api';
     import { useInviteChecks } from '../composables/useInviteChecks';
     import { isActionRecent, recordRecentAction } from '../composables/useRecentActions';
@@ -65,11 +61,9 @@
     import { showUserDialog } from '../coordinators/userCoordinator';
 
     const { t } = useI18n();
-    const { showSendBoopDialog } = useUserStore();
     const launchStore = useLaunchStore();
     const { lastLocation, lastLocationDestination } = storeToRefs(useLocationStore());
     const { isGameRunning } = storeToRefs(useGameStore());
-    const { currentUser } = storeToRefs(useUserStore());
     const { checkCanInvite, checkCanInviteSelf } = useInviteChecks();
 
     const props = defineProps({
@@ -130,10 +124,6 @@
                     toast.success(t('message.invite.sent'));
                 });
         });
-    }
-
-    function handleSendBoop() {
-        showSendBoopDialog(props.userId);
     }
 
     function handleJoin() {

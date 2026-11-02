@@ -1,4 +1,3 @@
-import AvatarInfo from '../../components/AvatarInfo.vue';
 import Location from '../../components/Location.vue';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -101,13 +100,7 @@ const expandedRow = ({ row }) => {
                                     onClick={() => showFullscreenImageDialog(original.previousCurrentAvatarImageUrl)}
                                 />
                                 <br />
-                                <AvatarInfo
-                                    imageurl={original.previousCurrentAvatarThumbnailImageUrl}
-                                    userid={original.userId}
-                                    hintownerid={original.previousOwnerId}
-                                    hintavatarname={original.previousAvatarName}
-                                    avatartags={original.previousCurrentAvatarTags}
-                                />
+                                <span>{original.previousAvatarName}</span>
                             </>
                         ) : null}
                     </div>
@@ -124,13 +117,7 @@ const expandedRow = ({ row }) => {
                                     onClick={() => showFullscreenImageDialog(original.currentAvatarImageUrl)}
                                 />
                                 <br />
-                                <AvatarInfo
-                                    imageurl={original.currentAvatarThumbnailImageUrl}
-                                    userid={original.userId}
-                                    hintownerid={original.ownerId}
-                                    hintavatarname={original.avatarName}
-                                    avatartags={original.currentAvatarTags}
-                                />
+                                <span>{original.avatarName}</span>
                             </>
                         ) : null}
                     </div>
@@ -342,13 +329,7 @@ export const columns = [
             if (type === 'Avatar') {
                 return (
                     <div class="w-full min-w-0 truncate">
-                        <AvatarInfo
-                            imageurl={original.currentAvatarImageUrl}
-                            userid={original.userId}
-                            hintownerid={original.ownerId}
-                            hintavatarname={original.avatarName}
-                            avatartags={original.currentAvatarTags}
-                        />
+                        <span>{original.avatarName}</span>
                     </div>
                 );
             }

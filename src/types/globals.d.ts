@@ -22,16 +22,12 @@ declare global {
         WebApi: WebApi;
         VRCXStorage: VRCXStorage;
         SQLite: SQLite;
-        LogWatcher: LogWatcher;
-        Discord: Discord;
-        AssetBundleManager: AssetBundleManager;
         webApiService: webApiService;
         request: any;
         utils: any;
         dayjs: any;
         configRepository: any;
         database: any;
-        gameLogService: any;
         crypto: any;
         sqliteService: any;
         isVrOverlay: boolean;
@@ -81,13 +77,11 @@ declare global {
         debug: boolean;
         debugWebSocket: boolean;
         debugUserDiff: boolean;
-        debugPhotonLogging: boolean;
         debugGameLog: boolean;
         debugWebRequests: boolean;
         debugFriendState: boolean;
         debugRecompute: boolean;
         debugIPC: boolean;
-        debugVrcPlus: boolean;
         errorNoty: any;
         dontLogMeOut: boolean;
         endpointDomain: string;
@@ -115,36 +109,6 @@ declare global {
         ExecuteJson: (sql: string, args: string) => Promise<string>;
         ExecuteNonQuery: (sql: string, args: string) => Promise<Number>;
         ExecuteInsert: (sql: string, args: string) => Promise<Number>;
-    };
-
-    const LogWatcher: {
-        Get(): Promise<Array<[string, string, string, ...any[]]>>;
-        SetDateTill(date: string): Promise<void>;
-        GetLogLines(): Array<any>;
-        Reset(): Promise<void>;
-    };
-
-    const Discord: {
-        SetAssets(
-            details: string,
-            state: string,
-            detailsUrl: string,
-            bigIcon: string,
-            bigIconText: string,
-            smallIcon: string,
-            smallIconText: string,
-            startTime: number,
-            endTime: number,
-            partyId: string,
-            partySize: number,
-            partyMaxSize: number,
-            buttonText: string,
-            buttonUrl: string,
-            appId: string,
-            activityType: number,
-            statusDisplayType: number
-        ): Promise<void>;
-        SetActive(active: boolean): Promise<boolean>;
     };
 
     const AppApi: {
@@ -178,7 +142,6 @@ declare global {
         GetColourFromUserID(userId: string): Promise<number>;
         OpenLink(url: string): Promise<void>;
         OpenDiscordProfile(discordId: string): Promise<void>;
-        OpenSteamStorePage(appId: number): Promise<void>;
         GetLaunchCommand(): Promise<string>;
         IPCAnnounceStart(): Promise<void>;
         SendIpc(type: string, data: string): Promise<void>;
@@ -187,30 +150,15 @@ declare global {
         CurrentCulture(): Promise<string>;
         CurrentLanguage(): Promise<string>;
         GetVersion(): Promise<string>;
-        VrcClosedGracefully(): Promise<boolean>;
+        GameClosedGracefully(): Promise<boolean>;
         GetColourBulk(userIds: string[]): Promise<Record<string, number>>;
         SetAppLauncherSettings(enabled: boolean, killOnExit: boolean, runProcessOnce: boolean): Promise<void>;
         GetFileBase64(path: string): Promise<string | null>;
         TryOpenInstanceInVrc(launchUrl: string): Promise<boolean>;
         JoinNexvrInstance(instanceId: string): Promise<boolean>;
 
-        // Image Upload (Cef Only)
-        MD5File(blob: string): Promise<string>;
-        SignFile(blob: string): Promise<string>;
-        FileLength(blob: string): Promise<string>;
-
         // Folders
-        GetVRChatAppDataLocation(): Promise<string>;
-        GetVRChatPhotosLocation(): Promise<string>;
-        GetUGCPhotoLocation(path?: string): Promise<string>;
-        GetVRChatScreenshotsLocation(): Promise<string>;
-        GetVRChatCacheLocation(): Promise<string>;
         OpenVrcxAppDataFolder(): Promise<boolean>;
-        OpenVrcAppDataFolder(): Promise<boolean>;
-        OpenVrcPhotosFolder(): Promise<boolean>;
-        OpenUGCPhotosFolder(ugcPath?: string): Promise<boolean>;
-        OpenVrcScreenshotsFolder(): Promise<boolean>;
-        OpenCrashVrcCrashDumps(): Promise<boolean>;
         OpenShortcutFolder(): Promise<void>;
         OpenFolderAndSelectItem(path: string, isFolder?: boolean): Promise<void>;
         OpenFolderSelectorDialog(defaultPath?: string): Promise<string>;
@@ -225,50 +173,9 @@ declare global {
         StartGame(args: string): Promise<boolean>;
         StartGameFromPath(path: string, args: string): Promise<boolean>;
 
-        // Registry
-        GetVRChatRegistryKey(key: string): Promise<any>;
-        GetVRChatRegistryKeyString(key: string): Promise<string>;
-        SetVRChatRegistryKey(key: string, value: any, typeInt: number): Promise<boolean>;
-        GetVRChatRegistry(): Promise<Record<string, Record<string, any>>>;
-        SetVRChatRegistry(json: string): Promise<void>;
-        HasVRChatRegistryFolder(): Promise<boolean>;
-        DeleteVRChatRegistryFolder(): Promise<void>;
-        ReadVrcRegJsonFile(filepath: string): Promise<string>;
-        GetVRChatRegistryJson: () => Promise<string>;
-
         // Image Functions
         PopulateImageHosts(json: string): Promise<void>;
         GetImage(url: string, fileId: string, version: string): Promise<string>;
-        ResizeImageToFitLimits(base64data: string): Promise<string>;
-        CropAllPrints(ugcFolderPath: string): Promise<void>;
-        CropPrintImage(path: string): Promise<boolean>;
-        SavePrintToFile(url: string, ugcFolderPath: string, monthFolder: string, fileName: string): Promise<string>;
-        SaveStickerToFile(url: string, ugcFolderPath: string, monthFolder: string, fileName: string): Promise<string>;
-        SaveEmojiToFile(url: string, ugcFolderPath: string, monthFolder: string, fileName: string): Promise<string>;
-
-        // Screenshot
-        AddScreenshotMetadata(
-            path: string,
-            metadataString: string,
-            worldId: string,
-            changeFilename?: boolean
-        ): Promise<string>;
-        GetExtraScreenshotData(path: string, carouselCache: boolean): Promise<string>;
-        GetScreenshotMetadata(path: string): Promise<string>;
-        FindScreenshotsBySearch(searchQuery: string, searchType?: number): Promise<string>;
-        GetLastScreenshot(): Promise<string>;
-        DeleteScreenshotMetadata(path: string): Promise<boolean>;
-        DeleteAllScreenshotMetadata(): Promise<void>;
-
-        // Moderations
-        GetVRChatModerations(currentUserId: string): Promise<Record<string, number> | null>;
-        GetVRChatUserModeration(currentUserId: string, userId: string): Promise<number>;
-        SetVRChatUserModeration(currentUserId: string, userId: string, type: number): Promise<boolean>;
-
-        // VRC Config
-        ReadConfigFile(): Promise<string>;
-        ReadConfigFileSafe(): Promise<string>;
-        WriteConfigFile(json: string): Promise<void>;
 
         // Update
         DownloadUpdate(fileUrl: string, hashString: string, downloadSize: number): Promise<void>;
@@ -308,25 +215,6 @@ declare global {
         ExecuteJson(requestJson: string): Promise<string>;
     };
 
-    const AssetBundleManager: {
-        SweepCache(): Promise<string>;
-        GetCacheSize(): Promise<number>;
-        GetVRChatCacheFullLocation(
-            fileId: string,
-            fileVersion: number,
-            variant: string,
-            variantVersion: number
-        ): Promise<string>;
-        CheckVRChatCache(
-            fileId: string,
-            fileVersion: number,
-            variant: string,
-            variantVersion: number
-        ): Promise<{ Item1: number; Item2: boolean; Item3: string }>;
-        DeleteCache(fileId: string, fileVersion: number, variant: string, variantVersion: number): Promise<void>;
-        DeleteAllCache: () => Promise<void>;
-    };
-
     const webApiService: {
         clearCookies(): Promise<void>;
         getCookies(): Promise<string>;
@@ -334,10 +222,6 @@ declare global {
         execute(options: {
             url: string;
             method?: string;
-            uploadFilePUT?: boolean;
-            fileData?: string;
-            fileMIME?: string;
-            fileMD5?: string;
             headers?: Record<string, string>;
             data?: any;
         }): Promise<{ status: number; data: string }>;

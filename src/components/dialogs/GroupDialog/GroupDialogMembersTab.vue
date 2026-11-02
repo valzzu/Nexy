@@ -90,7 +90,6 @@
                             <User class="size-4 text-muted-foreground" />
                         </AvatarFallback>
                     </Avatar>
-                    <IconFrame :icon-frame="user.user?.iconFrame" />
                 </div>
                 <div class="flex-1 overflow-hidden">
                     <span
@@ -149,7 +148,6 @@
                             <User class="size-4 text-muted-foreground" />
                         </AvatarFallback>
                     </Avatar>
-                    <IconFrame :icon-frame="user.user?.iconFrame" />
                 </div>
                 <div class="flex-1 overflow-hidden">
                     <span
@@ -209,7 +207,6 @@
 <script setup>
     import { Download, Eye, MessageSquare, Pencil, RefreshCcw, Tag, User } from 'lucide-vue-next';
     import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-    import IconFrame from '@/components/IconFrame.vue';
     import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
     import { Button } from '@/components/ui/button';
     import { InputGroupField } from '@/components/ui/input-group';

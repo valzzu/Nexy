@@ -50,13 +50,10 @@
     const { setSidebarFavoriteGroupOrder } = appearanceStore;
 
     const favoriteStore = useFavoriteStore();
-    const { favoriteFriendGroups, localFriendFavoriteGroups } = storeToRefs(favoriteStore);
+    const { localFriendFavoriteGroups } = storeToRefs(favoriteStore);
 
     const allGroupItems = computed(() => {
         const items = [];
-        for (const group of favoriteFriendGroups.value) {
-            items.push({ key: group.key, displayName: group.displayName });
-        }
         for (const name of localFriendFavoriteGroups.value) {
             items.push({ key: `local:${name}`, displayName: name });
         }

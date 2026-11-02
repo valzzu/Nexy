@@ -99,19 +99,4 @@ describe('NotificationList.vue', () => {
         await wrapper.get('[data-testid="view-more"]').trigger('click');
         expect(wrapper.emitted('navigate-to-table')).toBeTruthy();
     });
-
-    test('re-emits invite-related events from NotificationItem', async () => {
-        const wrapper = mount(NotificationList, {
-            props: {
-                notifications: [makeNoty('n1', '2026-03-09T00:00:00.000Z')],
-                recentNotifications: []
-            }
-        });
-
-        await wrapper.get('[data-testid="emit-invite-response"]').trigger('click');
-        await wrapper.get('[data-testid="emit-invite-request-response"]').trigger('click');
-
-        expect(wrapper.emitted('show-invite-response')).toBeTruthy();
-        expect(wrapper.emitted('show-invite-request-response')).toBeTruthy();
-    });
 });

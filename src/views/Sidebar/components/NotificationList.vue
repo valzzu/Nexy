@@ -21,9 +21,7 @@
                         <NotificationItem
                             v-else-if="item.row.type === 'notification'"
                             :notification="item.row.notification"
-                            :is-unseen="item.row.isUnseen"
-                            @show-invite-response="$emit('show-invite-response', $event)"
-                            @show-invite-request-response="$emit('show-invite-request-response', $event)" />
+                            :is-unseen="item.row.isUnseen" />
                     </div>
                 </template>
             </div>
@@ -57,7 +55,7 @@
         recentNotifications: { type: /** @type {import('vue').PropType<any[]>} */ (Array), default: () => [] }
     });
 
-    defineEmits(['show-invite-response', 'show-invite-request-response', 'navigate-to-table']);
+    defineEmits(['navigate-to-table']);
 
     const { t } = useI18n();
     const scrollViewportRef = ref(null);

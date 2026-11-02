@@ -4,7 +4,6 @@ import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 
 import {
-    checkVRChatCache,
     compareByDisplayName,
     compareById,
     compareByLocationAt,
@@ -13,12 +12,9 @@ import {
     debounce,
     displayLocation,
     evictMapCache,
-    formatFileSize,
     getAvailablePlatforms,
-    getBundleDateSize,
     getGroupName,
     getWorldName,
-    hasGroupPermission,
     isRealInstance,
     parseLocation,
     replaceBioSymbols
@@ -32,14 +28,11 @@ import { useFriendStore } from './friend';
 import { useGroupStore } from './group';
 import { useLocationStore } from './location';
 import { useNotificationStore } from './notification';
-import { usePhotonStore } from './photon';
 import { useSharedFeedStore } from './sharedFeed';
 import { useUiStore } from './ui';
 import { useUserStore } from './user';
 import { useWorldStore } from './world';
 import { watchState } from '../services/watchState';
-
-import configRepository from '../services/config';
 
 export const useInstanceStore = defineStore('Instance', () => {
     const locationStore = useLocationStore();
@@ -51,7 +44,6 @@ export const useInstanceStore = defineStore('Instance', () => {
     const uiStore = useUiStore();
     const userStore = useUserStore();
     const sharedFeedStore = useSharedFeedStore();
-    const photonStore = usePhotonStore();
     const { t } = useI18n();
 
     const state = reactive({
@@ -81,8 +73,6 @@ export const useInstanceStore = defineStore('Instance', () => {
         isIos: false,
         avatarScalingDisabled: false,
         focusViewDisabled: false,
-        inCache: false,
-        cacheSize: '',
         fileAnalysis: {}
     });
 
@@ -351,8 +341,6 @@ export const useInstanceStore = defineStore('Instance', () => {
                 isIos: false,
                 avatarScalingDisabled: false,
                 focusViewDisabled: false,
-                inCache: false,
-                cacheSize: '',
                 fileAnalysis: {}
             };
             currentInstanceLocation.value = {};
@@ -365,8 +353,6 @@ export const useInstanceStore = defineStore('Instance', () => {
                 isIos: false,
                 avatarScalingDisabled: false,
                 focusViewDisabled: false,
-                inCache: false,
-                cacheSize: '',
                 fileAnalysis: {}
             };
             L = parseLocation(instanceId);
@@ -386,17 +372,6 @@ export const useInstanceStore = defineStore('Instance', () => {
                     );
                     currentInstanceWorld.value.focusViewDisabled =
                         args.ref?.tags.includes('feature_focus_view_disabled');
-                    checkVRChatCache(args.ref)
-                        .then((cacheInfo) => {
-                            if (cacheInfo.Item1 > 0) {
-                                currentInstanceWorld.value.inCache = true;
-                                currentInstanceWorld.value.cacheSize = formatFileSize(cacheInfo.Item1);
-                            }
-                        })
-                        .catch((error) => {
-                            console.error('Error checking VRChat cache:', error);
-                        });
-                    getBundleDateSize(args.ref);
                     return args;
                 })
                 .catch((error) => {
@@ -413,12 +388,6 @@ export const useInstanceStore = defineStore('Instance', () => {
                     currentInstanceWorld.value.isPC = isPC;
                     currentInstanceWorld.value.isQuest = isQuest;
                     currentInstanceWorld.value.isIos = isIos;
-                    checkVRChatCache(args.ref).then((cacheInfo) => {
-                        if (cacheInfo.Item1 > 0) {
-                            currentInstanceWorld.value.inCache = true;
-                            currentInstanceWorld.value.cacheSize = formatFileSize(cacheInfo.Item1);
-                        }
-                    });
                 });
         }
         if (isRealInstance(instanceId)) {
@@ -522,90 +491,6 @@ export const useInstanceStore = defineStore('Instance', () => {
         }
 
         return instanceName;
-    }
-
-    /**
-     * @param {string} worldId
-     * @param {any} options
-     * @returns {Promise<{ json: any; params } | null>}
-     */
-    async function createNewInstance(worldId = '', options) {
-        let D = options;
-
-        if (!D) {
-            D = {
-                loading: false,
-                accessType: await configRepository.getString('instanceDialogAccessType', 'public'),
-                region: await configRepository.getString('instanceRegion', 'US West'),
-                worldId: worldId,
-                groupId: await configRepository.getString('instanceDialogGroupId', ''),
-                groupAccessType: await configRepository.getString('instanceDialogGroupAccessType', 'plus'),
-                ageGate: await configRepository.getBool('instanceDialogAgeGate', false),
-                queueEnabled: await configRepository.getBool('instanceDialogQueueEnabled', true),
-                roleIds: [],
-                groupRef: {}
-            };
-        }
-
-        let type = 'public';
-        let canRequestInvite = false;
-        switch (D.accessType) {
-            case 'friends':
-                type = 'friends';
-                break;
-            case 'friends+':
-                type = 'hidden';
-                break;
-            case 'invite':
-                type = 'private';
-                break;
-            case 'invite+':
-                type = 'private';
-                canRequestInvite = true;
-                break;
-            case 'group':
-                type = 'group';
-                break;
-        }
-        let region = 'us';
-        if (D.region === 'US East') {
-            region = 'use';
-        } else if (D.region === 'Europe') {
-            region = 'eu';
-        } else if (D.region === 'Japan') {
-            region = 'jp';
-        }
-        const params = {
-            type,
-            canRequestInvite,
-            worldId: D.worldId,
-            ownerId: userStore.currentUser.id,
-            region
-        };
-        if (type === 'group') {
-            params.groupAccessType = D.groupAccessType;
-            params.ownerId = D.groupId;
-            params.queueEnabled = D.queueEnabled;
-            if (D.groupAccessType === 'members') {
-                params.roleIds = D.roleIds;
-            }
-            if (D.minimumAvatarPerformance) {
-                params.minimumAvatarPerformance = D.minimumAvatarPerformance;
-            }
-        }
-        if (D.ageGate && type === 'group' && hasGroupPermission(D.groupRef, 'group-instance-age-gated-create')) {
-            params.ageGate = true;
-        }
-        if (D.displayName) {
-            params.displayName = D.displayName;
-        }
-        try {
-            const args = await instanceRequest.createInstance(params);
-            return args;
-        } catch (err) {
-            console.error(err);
-            return null;
-        }
     }
 
     function applyWorldDialogInstances() {
@@ -1140,64 +1025,14 @@ export const useInstanceStore = defineStore('Instance', () => {
     function updatePlayerListDebounce() {
         const users = [];
         const pushUser = function (ref, profileRef) {
-            let photonId = -1;
             let isFriend = false;
             let isBlocked = false;
             let isMuted = false;
             let isAvatarInteractionDisabled = false;
             let isChatBoxMuted = false;
             let ageVerified = false;
-            photonStore.photonLobbyCurrent.forEach((ref1, id) => {
-                if (typeof ref1 !== 'undefined') {
-                    if (
-                        (typeof ref.id !== 'undefined' && typeof ref1.id !== 'undefined' && ref1.id === ref.id) ||
-                        (typeof ref.displayName !== 'undefined' &&
-                            typeof ref1.displayName !== 'undefined' &&
-                            ref1.displayName === ref.displayName)
-                    ) {
-                        photonId = id;
-                    }
-                }
-            });
-            let isMaster = false;
-            if (photonStore.photonLobbyMaster !== 0 && photonId === photonStore.photonLobbyMaster) {
-                isMaster = true;
-            }
-            let isModerator = false;
-            const lobbyJointime = photonStore.photonLobbyJointime.get(photonId);
-            let inVRMode = null;
-            let groupOnNameplate = '';
-            if (typeof lobbyJointime !== 'undefined') {
-                inVRMode = lobbyJointime.inVRMode;
-                groupOnNameplate = lobbyJointime.groupOnNameplate;
-                isModerator = lobbyJointime.canModerateInstance;
-            }
-            // if (groupOnNameplate) {
-            //     API.getCachedGroup({
-            //         groupId: groupOnNameplate
-            //     }).then((args) => {
-            //         groupOnNameplate = args.ref.name;
-            //     });
-            // }
-            let timeoutTime = 0;
             if (typeof ref.id !== 'undefined') {
                 isFriend = ref.isFriend;
-                if (
-                    photonStore.timeoutHudOverlayFilter === 'VIP' ||
-                    photonStore.timeoutHudOverlayFilter === 'Friends'
-                ) {
-                    photonStore.photonLobbyTimeout.forEach((ref1) => {
-                        if (ref1.userId === ref.id) {
-                            timeoutTime = ref1.time;
-                        }
-                    });
-                } else {
-                    photonStore.photonLobbyTimeout.forEach((ref1) => {
-                        if (ref1.displayName === ref.displayName) {
-                            timeoutTime = ref1.time;
-                        }
-                    });
-                }
                 isBlocked = ref.$moderations.isBlocked;
                 isMuted = ref.$moderations.isMuted;
                 isAvatarInteractionDisabled = ref.$moderations.isAvatarInteractionDisabled;
@@ -1210,13 +1045,7 @@ export const useInstanceStore = defineStore('Instance', () => {
                 displayName: ref.displayName,
                 timer: ref.$location_at,
                 $trustSortNum: ref.$trustSortNum ?? 0,
-                photonId,
-                isMaster,
-                isModerator,
-                inVRMode,
-                groupOnNameplate,
                 isFriend,
-                timeoutTime,
                 isBlocked,
                 isMuted,
                 isAvatarInteractionDisabled,
@@ -1289,7 +1118,6 @@ export const useInstanceStore = defineStore('Instance', () => {
 
         applyInstance,
         updateCurrentInstanceWorld,
-        createNewInstance,
         applyWorldDialogInstances,
         applyGroupDialogInstances,
         removeAllQueuedInstances,

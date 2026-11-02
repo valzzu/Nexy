@@ -42,39 +42,6 @@
                     @update:modelValue="setAutoDeclineFriendRequests" />
             </SettingsItem>
         </SettingsGroup>
-
-        <SettingsGroup v-if="showVrchatOnlySettings" :title="t('view.settings.social.favorites.header')">
-            <SettingsItem
-                :label="t('view.settings.general.favorites.header')"
-                :description="t('view.settings.general.favorites.header_tooltip')">
-                <Select
-                    :model-value="localFavoriteFriendsGroups"
-                    multiple
-                    @update:modelValue="setLocalFavoriteFriendsGroups">
-                    <SelectTrigger class="w-48">
-                        <SelectValue :placeholder="t('view.settings.general.favorites.group_placeholder')" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            <SelectItem v-for="group in favoriteFriendGroups" :key="group.key" :value="group.key">
-                                {{ group.displayName }}
-                            </SelectItem>
-                        </SelectGroup>
-                        <template v-if="localFriendFavoriteGroups.length">
-                            <SelectSeparator />
-                            <SelectGroup>
-                                <SelectItem
-                                    v-for="group in localFriendFavoriteGroups"
-                                    :key="'local:' + group"
-                                    :value="'local:' + group">
-                                    {{ group }}
-                                </SelectItem>
-                            </SelectGroup>
-                        </template>
-                    </SelectContent>
-                </Select>
-            </SettingsItem>
-        </SettingsGroup>
     </div>
 </template>
 
@@ -88,44 +55,21 @@
         NumberFieldIncrement,
         NumberFieldInput
     } from '@/components/ui/number-field';
-    import {
-        Select,
-        SelectContent,
-        SelectGroup,
-        SelectItem,
-        SelectSeparator,
-        SelectTrigger,
-        SelectValue
-    } from '@/components/ui/select';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 
-    import { useFavoriteStore, useGeneralSettingsStore } from '@/stores';
+    import { useGeneralSettingsStore } from '@/stores';
 
     import SettingsGroup from '../SettingsGroup.vue';
     import SettingsItem from '../SettingsItem.vue';
 
     const { t } = useI18n();
 
-    // The favorite groups filter uses VRChat favorites, which NexVR has no equivalent of
-    const showVrchatOnlySettings = false;
-
     const generalSettingsStore = useGeneralSettingsStore();
-    const favoriteStore = useFavoriteStore();
 
-    const {
-        recentActionCooldownEnabled,
-        recentActionCooldownMinutes,
-        localFavoriteFriendsGroups,
-        autoDeclineFriendRequests
-    } = storeToRefs(generalSettingsStore);
+    const { recentActionCooldownEnabled, recentActionCooldownMinutes, autoDeclineFriendRequests } =
+        storeToRefs(generalSettingsStore);
 
-    const {
-        setRecentActionCooldownEnabled,
-        setRecentActionCooldownMinutes,
-        setLocalFavoriteFriendsGroups,
-        setAutoDeclineFriendRequests
-    } = generalSettingsStore;
-
-    const { favoriteFriendGroups, localFriendFavoriteGroups } = storeToRefs(favoriteStore);
+    const { setRecentActionCooldownEnabled, setRecentActionCooldownMinutes, setAutoDeclineFriendRequests } =
+        generalSettingsStore;
 </script>

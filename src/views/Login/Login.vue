@@ -32,17 +32,6 @@
             </DropdownMenu>
         </div>
         <div class="my-auto flex w-full max-w-sm flex-col" :class="{ 'sm:max-w-3xl': hasSavedCredentials }">
-            <Alert
-                v-if="vrcStatusStore.hasIssue"
-                :variant="vrcStatusStore.isMajor ? 'destructive' : 'warning'"
-                class="cursor-pointer mb-3 hover:opacity-80 transition-opacity"
-                @click="vrcStatusStore.openStatusPage()">
-                <TriangleAlert class="size-4" />
-                <AlertTitle class="truncate">{{ t('status_bar.servers_issue') }}</AlertTitle>
-                <AlertDescription class="truncate">
-                    {{ vrcStatusStore.statusText }}
-                </AlertDescription>
-            </Alert>
             <div class="flex flex-col gap-2 sm:flex-row">
                 <div class="flex min-w-0 flex-col p-4 sm:flex-1">
                     <h2 class="mb-4 text-center text-lg font-semibold">{{ t('view.login.login') }}</h2>
@@ -134,7 +123,6 @@
                                         <User class="size-5 text-muted-foreground" />
                                     </AvatarFallback>
                                 </Avatar>
-                                <IconFrame :icon-frame="user.user.iconFrame" />
                             </ItemMedia>
                             <ItemContent class="min-w-0">
                                 <ItemTitle class="truncate max-w-full">{{ user.user.displayName }}</ItemTitle>
@@ -195,7 +183,6 @@
 </template>
 
 <script setup>
-    import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
     import { Field, FieldContent, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
     import {
         DropdownMenu,
@@ -205,9 +192,8 @@
     } from '@/components/ui/dropdown-menu';
     import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
     import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-    import IconFrame from '@/components/IconFrame.vue';
     import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from '@/components/ui/item';
-    import { ArrowBigDownDash, Languages, Trash2, TriangleAlert, User } from 'lucide-vue-next';
+    import { ArrowBigDownDash, Languages, Trash2, User } from 'lucide-vue-next';
     import { Field as VeeField, useForm } from 'vee-validate';
     import { useRoute, useRouter } from 'vue-router';
     import { Button } from '@/components/ui/button';
@@ -218,13 +204,7 @@
     import { useI18n } from 'vue-i18n';
     import { z } from 'zod';
 
-    import {
-        useAppearanceSettingsStore,
-        useAuthStore,
-        useModalStore,
-        useVrcStatusStore,
-        useVRCXUpdaterStore
-    } from '../../stores';
+    import { useAppearanceSettingsStore, useAuthStore, useModalStore, useVRCXUpdaterStore } from '../../stores';
     import { getLanguageName, languageCodes, resolveSystemLanguage } from '../../localization';
     import { tForLocale } from '../../plugins';
     import { openExternalLink } from '../../shared/utils';
@@ -249,8 +229,6 @@
     const { appLanguage } = storeToRefs(appearanceSettingsStore);
     const { changeAppLanguage } = appearanceSettingsStore;
     const modalStore = useModalStore();
-
-    const vrcStatusStore = useVrcStatusStore();
 
     const { t } = useI18n();
 

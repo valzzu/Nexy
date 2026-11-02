@@ -6,10 +6,8 @@ export const useSearchIndexStore = defineStore('SearchIndex', () => {
     const favoriteStore = useFavoriteStore();
 
     const friends = new Map();
-    const avatars = new Map();
     const worlds = new Map();
     const groups = new Map();
-    const favAvatars = new Map();
     const favWorlds = new Map();
 
     const version = ref(0);
@@ -26,7 +24,6 @@ export const useSearchIndexStore = defineStore('SearchIndex', () => {
             id: ctx.id,
             name: ctx.name || '',
             memo: ctx.ref?.$memo || '',
-            note: ctx.ref?.note || '',
             imageUrl: ctx.ref?.currentAvatarThumbnailImageUrl || ''
         };
         const existing = friends.get(ctx.id);
@@ -34,7 +31,6 @@ export const useSearchIndexStore = defineStore('SearchIndex', () => {
             existing &&
             existing.name === entry.name &&
             existing.memo === entry.memo &&
-            existing.note === entry.note &&
             existing.imageUrl === entry.imageUrl
         ) {
             return;
@@ -55,46 +51,6 @@ export const useSearchIndexStore = defineStore('SearchIndex', () => {
     function clearFriends() {
         if (friends.size > 0) {
             friends.clear();
-            version.value++;
-        }
-    }
-
-    /**
-     * @param {object} ref - Avatar data object
-     */
-    function upsertAvatar(ref) {
-        if (!ref || !ref.id) return;
-        const entry = {
-            id: ref.id,
-            name: ref.name || '',
-            authorId: ref.authorId || '',
-            imageUrl: ref.thumbnailImageUrl || ref.imageUrl || ''
-        };
-        const existing = avatars.get(ref.id);
-        if (
-            existing &&
-            existing.name === entry.name &&
-            existing.authorId === entry.authorId &&
-            existing.imageUrl === entry.imageUrl
-        ) {
-            return;
-        }
-        avatars.set(ref.id, entry);
-        version.value++;
-    }
-
-    /**
-     * @param {string} id
-     */
-    function removeAvatar(id) {
-        if (avatars.delete(id)) {
-            version.value++;
-        }
-    }
-
-    function clearAvatars() {
-        if (avatars.size > 0) {
-            avatars.clear();
             version.value++;
         }
     }
@@ -180,35 +136,7 @@ export const useSearchIndexStore = defineStore('SearchIndex', () => {
     }
 
     function rebuildFavoritesFromStore() {
-        const newFavAvatars = new Map();
-        for (const ctx of favoriteStore.favoriteAvatars) {
-            if (!ctx?.ref?.name) continue;
-            newFavAvatars.set(ctx.ref.id, {
-                id: ctx.ref.id,
-                name: ctx.ref.name,
-                imageUrl: ctx.ref.thumbnailImageUrl || ctx.ref.imageUrl || ''
-            });
-        }
-        for (const group of Object.values(favoriteStore.localAvatarFavorites)) {
-            for (const ref of group) {
-                if (!ref?.name || newFavAvatars.has(ref.id)) continue;
-                newFavAvatars.set(ref.id, {
-                    id: ref.id,
-                    name: ref.name,
-                    imageUrl: ref.thumbnailImageUrl || ref.imageUrl || ''
-                });
-            }
-        }
-
         const newFavWorlds = new Map();
-        for (const ctx of favoriteStore.favoriteWorlds) {
-            if (!ctx?.ref?.name) continue;
-            newFavWorlds.set(ctx.ref.id, {
-                id: ctx.ref.id,
-                name: ctx.ref.name,
-                imageUrl: ctx.ref.thumbnailImageUrl || ctx.ref.imageUrl || ''
-            });
-        }
         for (const group of Object.values(favoriteStore.localWorldFavorites)) {
             for (const ref of group) {
                 if (!ref?.name || newFavWorlds.has(ref.id)) continue;
@@ -220,21 +148,8 @@ export const useSearchIndexStore = defineStore('SearchIndex', () => {
             }
         }
 
-        let changed = false;
-        if (favAvatars.size !== newFavAvatars.size) {
-            changed = true;
-        } else {
-            for (const [id, entry] of newFavAvatars) {
-                const existing = favAvatars.get(id);
-                if (!existing || existing.name !== entry.name || existing.imageUrl !== entry.imageUrl) {
-                    changed = true;
-                    break;
-                }
-            }
-        }
-        if (favWorlds.size !== newFavWorlds.size) {
-            changed = true;
-        } else if (!changed) {
+        let changed = favWorlds.size !== newFavWorlds.size;
+        if (!changed) {
             for (const [id, entry] of newFavWorlds) {
                 const existing = favWorlds.get(id);
                 if (!existing || existing.name !== entry.name || existing.imageUrl !== entry.imageUrl) {
@@ -245,10 +160,6 @@ export const useSearchIndexStore = defineStore('SearchIndex', () => {
         }
 
         if (changed) {
-            favAvatars.clear();
-            for (const [id, entry] of newFavAvatars) {
-                favAvatars.set(id, entry);
-            }
             favWorlds.clear();
             for (const [id, entry] of newFavWorlds) {
                 favWorlds.set(id, entry);
@@ -257,15 +168,10 @@ export const useSearchIndexStore = defineStore('SearchIndex', () => {
         }
     }
 
-    watch(
-        [() => favoriteStore.localAvatarFavorites, () => favoriteStore.localWorldFavorites],
-        rebuildFavoritesFromStore,
-        { deep: true, immediate: true }
-    );
+    watch(() => favoriteStore.localWorldFavorites, rebuildFavoritesFromStore, { deep: true, immediate: true });
 
     function clearFavorites() {
-        if (favAvatars.size > 0 || favWorlds.size > 0) {
-            favAvatars.clear();
+        if (favWorlds.size > 0) {
             favWorlds.clear();
             version.value++;
         }
@@ -280,10 +186,8 @@ export const useSearchIndexStore = defineStore('SearchIndex', () => {
     function getSnapshot() {
         return {
             friends: Array.from(friends.values()),
-            avatars: Array.from(avatars.values()),
             worlds: Array.from(worlds.values()),
             groups: Array.from(groups.values()),
-            favAvatars: Array.from(favAvatars.values()),
             favWorlds: Array.from(favWorlds.values())
         };
     }
@@ -294,10 +198,6 @@ export const useSearchIndexStore = defineStore('SearchIndex', () => {
         syncFriend,
         removeFriend,
         clearFriends,
-
-        upsertAvatar,
-        removeAvatar,
-        clearAvatars,
 
         upsertWorld,
         removeWorld,

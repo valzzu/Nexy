@@ -2,17 +2,11 @@ import { nextTick } from 'vue';
 import { toast } from 'vue-sonner';
 import { i18n } from '../plugins/i18n';
 
-import {
-    convertFileUrlToImageUrl,
-    createDefaultGroupRef,
-    hasGroupPermission,
-    sanitizeEntityJson
-} from '../shared/utils';
+import { createDefaultGroupRef, sanitizeEntityJson } from '../shared/utils';
 import { groupRequest, queryRequest } from '../api';
 import { database } from '../services/database';
 import { FILTER_EVERYONE } from '../shared/constants/';
 import { patchGroupFromEvent } from '../queries';
-import { useGameStore } from '../stores/game';
 import { useInstanceStore } from '../stores/instance';
 import { useModalStore } from '../stores/modal';
 import { useNotificationStore } from '../stores/notification';
@@ -353,187 +347,6 @@ export function showGroupDialog(groupId, options = {}) {
         });
 }
 
-export function clearGroupMemberModerationDialog() {
-    const groupStore = useGroupStore();
-    const D = groupStore.groupMemberModeration;
-    D.tables.members.data = [];
-    D.tables.members.pageIndex = 0;
-    D.tables.bans.data = [];
-    D.tables.bans.pageIndex = 0;
-    D.tables.invites.data = [];
-    D.tables.invites.pageIndex = 0;
-    D.tables.logs.data = [];
-    D.tables.logs.pageIndex = 0;
-}
-
-/**
- * @param groupId
- * @param userId
- */
-export function showGroupMemberModerationDialog(groupId, userId = '') {
-    const uiStore = useUiStore();
-    const groupStore = useGroupStore();
-    const isMainDialogOpen = uiStore.openDialog({
-        type: 'group-member-moderation',
-        id: groupId
-    });
-    const D = groupStore.groupMemberModeration;
-    if (!isMainDialogOpen || groupId !== D.id) {
-        clearGroupMemberModerationDialog();
-    }
-    D.id = groupId;
-    D.openWithUserId = userId;
-
-    D.groupRef = {};
-    D.auditLogTypes = [];
-    queryRequest.fetch('group.dialog', { groupId }).then((args) => {
-        D.groupRef = args.ref;
-        uiStore.setDialogCrumbLabel('group-member-moderation', D.id, D.groupRef?.name || D.id);
-        if (hasGroupPermission(D.groupRef, 'group-audit-view')) {
-            groupRequest.getGroupAuditLogTypes({ groupId }).then((args) => {
-                if (D.id !== args.params.groupId) {
-                    return;
-                }
-                D.auditLogTypes = args.json;
-            });
-        }
-    });
-    D.visible = true;
-}
-
-/**
- * @param groupId
- * @returns {Promise<void>}
- */
-export async function loadGroupRolesDialogRoles(groupId) {
-    const groupStore = useGroupStore();
-    const D = groupStore.groupRolesDialog;
-    D.loading = true;
-    try {
-        if (!canEditGroupRoles(D.groupRef)) {
-            const args = await groupRequest.getGroup({ groupId, includeRoles: true });
-            if (D.id !== args.params.groupId) {
-                return;
-            }
-            D.groupRef = args.ref;
-            setGroupRolesDialogRoles(args.ref.roles);
-            await loadViewOnlyGroupPermissions(groupId);
-            return;
-        }
-        const args = await groupRequest.getGroupRoles({ groupId });
-        if (D.id !== args.params.groupId) {
-            return;
-        }
-        setGroupRolesDialogRoles(args.json.map((role) => sanitizeEntityJson(role, ['name', 'description'])));
-    } finally {
-        D.loading = false;
-    }
-}
-
-/**
- * @param {object} groupRef
- * @returns {boolean}
- */
-function canEditGroupRoles(groupRef) {
-    return (
-        hasGroupPermission(groupRef, 'group-roles-manage') || hasGroupPermission(groupRef, 'group-default-role-manage')
-    );
-}
-
-/**
- * @param {Array} roles
- */
-function setGroupRolesDialogRoles(roles) {
-    const groupStore = useGroupStore();
-    const D = groupStore.groupRolesDialog;
-    D.roles = [...roles].sort((a, b) => a.order - b.order);
-}
-
-/**
- * @param {string} groupId
- * @returns {Promise<void>} Jank to load group permission list from another group
- */
-async function loadViewOnlyGroupPermissions(groupId) {
-    const groupStore = useGroupStore();
-    const D = groupStore.groupRolesDialog;
-    const managedGroup = Array.from(groupStore.currentUserGroups.values()).find((group) =>
-        hasGroupPermission(group, 'group-roles-manage')
-    );
-    if (managedGroup) {
-        try {
-            const args = await groupRequest.getGroupPermissionList({ groupId: managedGroup.id });
-            if (D.id !== groupId) {
-                return;
-            }
-            D.permissions = args.json.map((permission) => ({ ...permission, allowedToAdd: false }));
-            return;
-        } catch (error) {
-            console.error('Failed to load group permission list:', error);
-        }
-    }
-    if (D.id !== groupId) {
-        return;
-    }
-    const permissionNames = new Set();
-    for (const role of D.roles) {
-        for (const permission of role.permissions) {
-            permissionNames.add(permission);
-        }
-    }
-    D.permissions = Array.from(permissionNames)
-        .sort()
-        .map((name) => ({ name, allowedToAdd: false }));
-}
-
-/**
- * @param groupId
- */
-export function showGroupRolesDialog(groupId) {
-    const uiStore = useUiStore();
-    const groupStore = useGroupStore();
-    uiStore.openDialog({
-        type: 'group-roles',
-        id: groupId
-    });
-    const D = groupStore.groupRolesDialog;
-    if (D.id !== groupId) {
-        D.roles = [];
-        D.permissions = [];
-        D.selectedRoleId = '';
-    }
-    D.id = groupId;
-    D.groupRef = {};
-    D.loading = true;
-    queryRequest
-        .fetch('group.dialog', { groupId, includeRoles: true })
-        .then((args) => {
-            if (D.id !== groupId) {
-                return;
-            }
-            D.groupRef = args.ref;
-            uiStore.setDialogCrumbLabel('group-roles', D.id, D.groupRef?.name || D.id);
-            if (!canEditGroupRoles(D.groupRef)) {
-                setGroupRolesDialogRoles(D.groupRef.roles);
-                loadViewOnlyGroupPermissions(groupId).finally(() => {
-                    D.loading = false;
-                });
-                return;
-            }
-            loadGroupRolesDialogRoles(groupId);
-            groupRequest.getGroupPermissionList({ groupId }).then((args) => {
-                if (D.id !== args.params.groupId) {
-                    return;
-                }
-                D.permissions = args.json;
-            });
-        })
-        .catch((error) => {
-            D.loading = false;
-            throw error;
-        });
-    D.visible = true;
-}
-
 /**
  * @param groupId
  */
@@ -797,38 +610,9 @@ export async function getCurrentUserGroups() {
     saveCurrentUserGroups();
 }
 
-export function getCurrentUserRepresentedGroup() {
-    const userStore = useUserStore();
-    return groupRequest
-        .getRepresentedGroup({
-            userId: userStore.currentUser.id
-        })
-        .then((args) => {
-            handleGroupRepresented(args);
-            return args;
-        });
-}
-
 export async function initUserGroups() {
     const userStore = useUserStore();
-    updateInGameGroupOrder();
     loadCurrentUserGroups(userStore.currentUser.id, userStore.currentUser?.presence?.groups);
-}
-
-export async function updateInGameGroupOrder() {
-    const groupStore = useGroupStore();
-    const gameStore = useGameStore();
-    const userStore = useUserStore();
-    groupStore.setInGameGroupOrder([]);
-    try {
-        const json = await gameStore.getVRChatRegistryKey(`VRC_GROUP_ORDER_${userStore.currentUser.id}`);
-        if (!json) {
-            return;
-        }
-        groupStore.setInGameGroupOrder(JSON.parse(String(json)));
-    } catch (err) {
-        console.error(err);
-    }
 }
 
 /**
@@ -872,13 +656,6 @@ export function leaveGroup(groupId) {
             removeGroupSearchIndex(groupId);
             saveCurrentUserGroups();
         }
-        if (
-            userStore.userDialog.visible &&
-            userStore.userDialog.id === userStore.currentUser.id &&
-            userStore.userDialog.representedGroup.id === groupId
-        ) {
-            getCurrentUserRepresentedGroup();
-        }
     });
 }
 
@@ -905,86 +682,7 @@ export function leaveGroupPrompt(groupId) {
         .catch(() => {});
 }
 
-/**
- * @param groupId
- * @param visibility
- */
-export function setGroupVisibility(groupId, visibility) {
-    const t = i18n.global.t;
-    const userStore = useUserStore();
-    return groupRequest
-        .setGroupMemberProps(userStore.currentUser.id, groupId, {
-            visibility
-        })
-        .then((args) => {
-            handleGroupMemberProps(args);
-            toast.success(t('message.group.visibility_updated'));
-            return args;
-        });
-}
-
-/**
- * @param groupId
- * @param subscribe
- */
-export function setGroupSubscription(groupId, subscribe) {
-    const t = i18n.global.t;
-    const userStore = useUserStore();
-    return groupRequest
-        .setGroupMemberProps(userStore.currentUser.id, groupId, {
-            isSubscribedToAnnouncements: subscribe
-        })
-        .then((args) => {
-            handleGroupMemberProps(args);
-            toast.success(t('message.group.subscription_updated'));
-            return args;
-        });
-}
-
-/**
- * @param groupId
- * @param subscribeToEventAnnouncements
- */
-export function setGroupEventAnnouncements(groupId, subscribe) {
-    const t = i18n.global.t;
-    const userStore = useUserStore();
-    return groupRequest
-        .setGroupMemberProps(userStore.currentUser.id, groupId, {
-            isSubscribedToEventAnnouncements: subscribe
-        })
-        .then((args) => {
-            handleGroupMemberProps(args);
-            toast.success(t('message.group.event_announcement_updated'));
-            return args;
-        });
-}
-
 // ─── Event handlers ──────────────────────────────────────────────────────────
-
-/**
- * @param args
- */
-export function handleGroupRepresented(args) {
-    const userStore = useUserStore();
-    const D = userStore.userDialog;
-    const json = args.json;
-    D.representedGroup = json;
-    D.representedGroup.$thumbnailUrl = convertFileUrlToImageUrl(json.iconUrl);
-    if (!json || !json.isRepresenting) {
-        D.isRepresentedGroupLoading = false;
-    }
-    if (!json.groupId) {
-        // no group
-        return;
-    }
-    if (args.params.userId !== userStore.currentUser.id) {
-        // not current user, don't apply someone elses myMember
-        return;
-    }
-    json.$memberId = json.id;
-    json.id = json.groupId;
-    applyGroup(json);
-}
 
 /**
  * @param args
@@ -994,52 +692,6 @@ export function handleGroupList(args) {
         json.$memberId = json.id;
         json.id = json.groupId;
         applyGroup(json);
-    }
-}
-
-/**
- * @param args
- */
-export function handleGroupMemberProps(args) {
-    const groupStore = useGroupStore();
-    const userStore = useUserStore();
-    if (args.userId === userStore.currentUser.id) {
-        const json = args.json;
-        json.$memberId = json.id;
-        json.id = json.groupId;
-        if (groupStore.groupDialog.visible && groupStore.groupDialog.id === json.groupId) {
-            groupStore.groupDialog.ref.myMember.visibility = json.visibility;
-            groupStore.groupDialog.ref.myMember.isSubscribedToAnnouncements = json.isSubscribedToAnnouncements;
-            groupStore.groupDialog.ref.myMember.isSubscribedToEventAnnouncements =
-                json.isSubscribedToEventAnnouncements;
-        }
-        if (userStore.userDialog.visible && userStore.userDialog.id === userStore.currentUser.id) {
-            getCurrentUserRepresentedGroup();
-        }
-        handleGroupMember({
-            json,
-            params: {
-                groupId: json.groupId
-            }
-        });
-    }
-    let member;
-    if (groupStore.groupDialog.id === args.json.groupId) {
-        let i;
-        for (i = 0; i < groupStore.groupDialog.members.length; ++i) {
-            member = groupStore.groupDialog.members[i];
-            if (member.userId === args.json.userId) {
-                Object.assign(member, applyGroupMember(args.json));
-                break;
-            }
-        }
-        for (i = 0; i < groupStore.groupDialog.memberSearchResults.length; ++i) {
-            member = groupStore.groupDialog.memberSearchResults[i];
-            if (member.userId === args.json.userId) {
-                Object.assign(member, applyGroupMember(args.json));
-                break;
-            }
-        }
     }
 }
 

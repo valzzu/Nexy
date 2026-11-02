@@ -42,9 +42,6 @@
                                                         <User class="size-5 text-muted-foreground" />
                                                     </AvatarFallback>
                                                 </Avatar>
-                                                <IconFrame
-                                                    :enabled="sidebarCosmetics"
-                                                    :icon-frame="currentUser.iconFrame" />
                                             </div>
                                             <div class="flex-1 overflow-hidden h-9 flex flex-col justify-between">
                                                 <span
@@ -172,11 +169,6 @@
                                                 <Clock class="size-3.5 text-muted-foreground" />
                                             </ContextMenuShortcut>
                                         </ContextMenuItem>
-                                        <ContextMenuItem
-                                            :disabled="!currentUser.isBoopingEnabled"
-                                            @click="friendSendBoop(item.row.friend)">
-                                            {{ t('dialog.user.actions.send_boop') }}
-                                        </ContextMenuItem>
                                         <ContextMenuSeparator
                                             v-if="
                                                 item.row.friend.state === 'online' && hasFriendLocation(item.row.friend)
@@ -231,7 +223,6 @@
         ContextMenuTrigger
     } from '../../../components/ui/context-menu';
     import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/avatar';
-    import IconFrame from '../../../components/IconFrame.vue';
     import {
         useAdvancedSettingsStore,
         useAppearanceSettingsStore,
@@ -274,15 +265,13 @@
         isSidebarDivideByFriendGroup,
         sidebarFavoriteGroups,
         sidebarFavoriteGroupOrder,
-        sidebarSortMethods,
-        sidebarCosmetics
+        sidebarSortMethods
     } = storeToRefs(appearanceSettingsStore);
     const { gameLogDisabled } = storeToRefs(useAdvancedSettingsStore());
     const userStore = useUserStore();
-    const { showSendBoopDialog, showEditProfileDialog } = userStore;
+    const { showEditProfileDialog } = userStore;
     const launchStore = useLaunchStore();
-    const { favoriteFriendGroups, groupedByGroupKeyFavoriteFriends, localFriendFavorites } =
-        storeToRefs(useFavoriteStore());
+    const { localFriendFavorites } = storeToRefs(useFavoriteStore());
     const { lastLocation, lastLocationDestination } = storeToRefs(useLocationStore());
     const { isGameRunning } = storeToRefs(useGameStore());
     const { currentUser, editProfileDialog } = storeToRefs(userStore);
@@ -316,17 +305,9 @@
     const shouldHideSameInstance = computed(() => isSidebarGroupByInstance.value && isHideFriendsInSameInstance.value);
 
     const selectedFavoriteGroups = computed(() => {
-        const remoteFriendsByGroup = groupedByGroupKeyFavoriteFriends.value;
         const selectedGroups = new Set(sidebarFavoriteGroups.value);
         const hasFilter = selectedGroups.size > 0;
         const groups = [];
-
-        for (const key in remoteFriendsByGroup) {
-            if (hasFilter && !selectedGroups.has(key)) continue;
-            const groupName = favoriteFriendGroups.value.find((g) => g.key === key)?.displayName || '';
-            const memberIds = new Set(remoteFriendsByGroup[key].map((f) => f.id));
-            groups.push({ key, groupName, memberIds });
-        }
 
         for (const groupName in localFriendFavorites.value) {
             const key = `local:${groupName}`;
@@ -787,13 +768,6 @@
                     toast.success(t('message.invite.sent'));
                 });
         });
-    }
-
-    /**
-     * @param {object} friend - Friend item from friend list
-     */
-    function friendSendBoop(friend) {
-        showSendBoopDialog(friend.id);
     }
 
     /**

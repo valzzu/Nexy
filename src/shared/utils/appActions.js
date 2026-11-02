@@ -1,6 +1,6 @@
 import { toast } from 'vue-sonner';
 
-import { useExternalLinkStore, useSearchStore } from '../../stores';
+import { useExternalLinkStore } from '../../stores';
 import { escapeTag } from './base/string';
 import { i18n } from '../../plugins/i18n';
 
@@ -47,11 +47,6 @@ function copyToClipboard(text, message = 'Copied successfully!') {
  * @param {string} link
  */
 function openExternalLink(link) {
-    const searchStore = useSearchStore();
-    if (searchStore.directAccessParse(link)) {
-        return;
-    }
-
     const externalLinkStore = useExternalLinkStore();
     externalLinkStore.showExternalLinkDialog(link);
 }

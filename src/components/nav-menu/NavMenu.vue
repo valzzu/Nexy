@@ -42,12 +42,6 @@
                                                     <span v-show="!isCollapsed">{{
                                                         item.titleIsCustom ? item.title : t(item.title || '')
                                                     }}</span>
-                                                    <span
-                                                        v-if="item.action === 'direct-access' && !isCollapsed"
-                                                        class="nav-shortcut-hint ml-auto inline-flex items-center gap-2">
-                                                        <Kbd>{{ isMac ? '⌘' : 'Ctrl' }}</Kbd>
-                                                        <Kbd>D</Kbd>
-                                                    </span>
                                                 </SidebarMenuButton>
                                             </ContextMenuTrigger>
                                             <ContextMenuContent>
@@ -159,7 +153,7 @@
 </template>
 
 <script setup>
-    import { computed, h, onMounted, ref, watch } from 'vue';
+    import { computed, onMounted, ref, watch } from 'vue';
 
     import { storeToRefs } from 'pinia';
     import { Plus } from 'lucide-vue-next';
@@ -170,7 +164,6 @@
     import { useNavTheme } from './composables/useNavTheme';
     import { useToolActions } from '../../composables/useToolActions';
     import { useToolNavPinning } from '../../composables/useToolNavPinning';
-    import { Kbd } from '@/components/ui/kbd';
     import {
         ContextMenu,
         ContextMenuContent,
@@ -194,7 +187,6 @@
         useAuthStore,
         useDashboardStore,
         useModalStore,
-        useSearchStore,
         useUiStore,
         useVRCXUpdaterStore
     } from '../../stores';
@@ -209,7 +201,6 @@
 
     const { t, locale } = useI18n();
     const router = useRouter();
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
     const VRCXUpdaterStore = useVRCXUpdaterStore();
     const { pendingVRCXUpdate, pendingVRCXInstall, appVersion } = storeToRefs(VRCXUpdaterStore);
@@ -222,7 +213,6 @@
     const { notifiedMenus } = storeToRefs(uiStore);
     const { clearAllNotifications } = uiStore;
 
-    const { directAccessPaste } = useSearchStore();
     const { triggerTool } = useToolActions();
     const { unpinToolFromNav } = useToolNavPinning();
     const { logout } = useAuthStore();
@@ -274,7 +264,6 @@
         router,
         dashboardStore,
         dashboards,
-        directAccessPaste,
         triggerTool
     });
 
@@ -288,16 +277,7 @@
     const isEntryNotified = (entry) => checkEntryNotified(entry, notifiedMenus.value);
 
     const getItemTooltip = (item) => {
-        const label = item.titleIsCustom ? item.title : t(item.title || '');
-        if (item.action !== 'direct-access') {
-            return label;
-        }
-        return () =>
-            h('span', { class: 'inline-flex items-center gap-1' }, [
-                label,
-                h(Kbd, () => (isMac ? '⌘' : 'Ctrl')),
-                h(Kbd, () => 'D')
-            ]);
+        return item.titleIsCustom ? item.title : t(item.title || '');
     };
 
     const isNavItemNotified = (item) => {
@@ -349,17 +329,7 @@
     const handleQuickCreateDashboard = async () => {
         const dashboard = await dashboardStore.createDashboard(t('dashboard.default_name'));
         const dashboardKey = `${DASHBOARD_NAV_KEY_PREFIX}${dashboard.id}`;
-        const currentLayout = [...navLayout.value];
-        const directAccessIdx = currentLayout.findIndex(
-            (entry) => entry.type === 'item' && entry.key === 'direct-access'
-        );
-        const newEntry = { type: 'item', key: dashboardKey };
-        if (directAccessIdx !== -1) {
-            currentLayout.splice(directAccessIdx, 0, newEntry);
-        } else {
-            currentLayout.push(newEntry);
-        }
-        const nextLayout = currentLayout;
+        const nextLayout = [...navLayout.value, { type: 'item', key: dashboardKey }];
         const nextHiddenKeys = navHiddenKeys.value.filter((key) => key !== dashboardKey);
         const sanitized = sanitizeLayoutLocal(nextLayout, nextHiddenKeys);
         navLayout.value = sanitized;

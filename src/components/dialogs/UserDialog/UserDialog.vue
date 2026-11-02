@@ -11,8 +11,6 @@
             <UserSummaryHeader
                 :get-user-state-text="getUserStateText"
                 :copy-user-display-name="copyUserDisplayName"
-                :toggle-badge-visibility="toggleBadgeVisibility"
-                :toggle-badge-showcased="toggleBadgeShowcased"
                 :user-dialog-command="userDialogCommand" />
         </div>
 
@@ -29,24 +27,12 @@
                     <UserDialogInfoTab ref="infoTabRef" />
                 </template>
 
-                <template v-if="userDialog.id !== currentUser.id && !currentUser.hasSharedConnectionsOptOut" #mutual>
-                    <UserDialogMutualFriendsTab ref="mutualFriendsTabRef" />
-                </template>
-
                 <template #Groups>
                     <UserDialogGroupsTab ref="groupsTabRef" />
                 </template>
 
                 <template #Worlds>
                     <UserDialogWorldsTab ref="worldsTabRef" />
-                </template>
-
-                <template #favorite-worlds>
-                    <UserDialogFavoriteWorldsTab ref="favoriteWorldsTabRef" />
-                </template>
-
-                <template #Avatars>
-                    <UserDialogAvatarsTab ref="avatarsTabRef" />
                 </template>
 
                 <template #Activity>
@@ -63,15 +49,6 @@
                         @refresh="refreshUserDialogTreeData()" />
                 </template>
             </TabsUnderline>
-            <SendInviteDialog
-                v-model:sendInviteDialogVisible="sendInviteDialogVisible"
-                v-model:sendInviteDialog="sendInviteDialog"
-                @closeInviteDialog="closeInviteDialog" />
-            <SendInviteRequestDialog
-                v-model:sendInviteRequestDialogVisible="sendInviteRequestDialogVisible"
-                v-model:sendInviteDialog="sendInviteDialog"
-                @closeInviteDialog="closeInviteDialog" />
-            <ModerateGroupDialog />
         </div>
     </div>
 </template>
@@ -85,39 +62,25 @@
     import { useI18n } from 'vue-i18n';
 
     import {
-        useFavoriteStore,
         useFriendStore,
-        useGalleryStore,
-        useGroupStore,
         useInstanceStore,
-        useInviteStore,
         useLocationStore,
         useModalStore,
-        useModerationStore,
         useNotificationStore,
         useUserStore
     } from '../../../stores';
     import { copyToClipboard } from '../../../shared/utils';
     import { getRawPresence, getRawResponse, presentSections } from '../../../services/nexvr/rawResponses';
-    import { miscRequest } from '../../../api';
     import { useUserDialogCommands } from './useUserDialogCommands';
-    import { showAvatarDialog, showAvatarAuthorDialog } from '../../../coordinators/avatarCoordinator';
-    import { showUserDialog, refreshUserDialogAvatars } from '../../../coordinators/userCoordinator';
+    import { showUserDialog } from '../../../coordinators/userCoordinator';
     import { getFriendRequest, handleFriendDelete } from '../../../coordinators/friendRelationshipCoordinator';
 
     import DialogJsonTab from '../DialogJsonTab.vue';
-    import SendInviteDialog from '../InviteDialog/SendInviteDialog.vue';
     import UserDialogActivityTab from './UserDialogActivityTab.vue';
-    import UserDialogAvatarsTab from './UserDialogAvatarsTab.vue';
-    import UserDialogFavoriteWorldsTab from './UserDialogFavoriteWorldsTab.vue';
     import UserDialogGroupsTab from './UserDialogGroupsTab.vue';
     import UserDialogInfoTab from './UserDialogInfoTab.vue';
-    import UserDialogMutualFriendsTab from './UserDialogMutualFriendsTab.vue';
     import UserDialogWorldsTab from './UserDialogWorldsTab.vue';
     import UserSummaryHeader from './UserSummaryHeader.vue';
-
-    import ModerateGroupDialog from '../ModerateGroupDialog.vue';
-    import SendInviteRequestDialog from './SendInviteRequestDialog.vue';
 
     const props = defineProps({
         previousIds: {
@@ -132,8 +95,6 @@
 
     const { t } = useI18n();
     const userDialogTabs = computed(() => {
-        // Mutual friends, favorite worlds and avatars come from VRChat APIs
-        // NexVR doesn't offer, so those tabs are left out
         const tabs = [
             { value: 'Info', label: t('dialog.user.info.header') },
             { value: 'Groups', label: t('dialog.user.groups.header') },
@@ -147,10 +108,7 @@
     });
     const infoTabRef = ref(null);
     const activityTabRef = ref(null);
-    const favoriteWorldsTabRef = ref(null);
-    const mutualFriendsTabRef = ref(null);
     const worldsTabRef = ref(null);
-    const avatarsTabRef = ref(null);
     const groupsTabRef = ref(null);
 
     const modalStore = useModalStore();
@@ -170,47 +128,21 @@
             ? 'color-mix(in oklab, var(--foreground) 30%, transparent)'
             : `color-mix(in oklab, ${color} 50%, transparent)`;
     });
-    const { cachedUsers, showSendBoopDialog, showEditProfileDialog } = useUserStore();
-    const { showFavoriteDialog } = useFavoriteStore();
-    const { showModerateGroupDialog } = useGroupStore();
-    const { inviteGroupDialog } = storeToRefs(useGroupStore());
+    const { cachedUsers, showEditProfileDialog } = useUserStore();
     const { lastLocation, lastLocationDestination } = storeToRefs(useLocationStore());
-    const { refreshInviteMessageTableData } = useInviteStore();
     const { friendLogTable } = storeToRefs(useFriendStore());
-    const { clearInviteImageUpload, showGalleryPage } = useGalleryStore();
 
-    const { applyPlayerModeration, handlePlayerModerationDelete, showModerationReportDialog } = useModerationStore();
-
-    const {
-        sendInviteDialogVisible,
-        sendInviteDialog,
-        sendInviteRequestDialogVisible,
-        userDialogCommand,
-        registerCallbacks
-    } = useUserDialogCommands(userDialog, {
+    const { userDialogCommand, registerCallbacks } = useUserDialogCommands(userDialog, {
         t,
         toast,
         modalStore,
-        currentUser,
         cachedUsers,
         friendLogTable,
         lastLocation,
         lastLocationDestination,
-        inviteGroupDialog,
         showUserDialog,
-        showFavoriteDialog,
-        showAvatarDialog,
-        showAvatarAuthorDialog,
-        showModerateGroupDialog,
-        showSendBoopDialog,
-        showModerationReportDialog,
-        showGalleryPage,
         getFriendRequest,
         handleFriendDelete,
-        applyPlayerModeration,
-        handlePlayerModerationDelete,
-        refreshInviteMessageTableData,
-        clearInviteImageUpload,
         instanceStore,
         useNotificationStore,
         showEditProfileDialog
@@ -218,14 +150,11 @@
 
     // Watching the id too: a cached user can load within one tick, so loading
     // flips true and back to false unseen and the open tab kept the last user
-    watch(
-        [() => userDialog.value.visible, () => userDialog.value.loading, () => userDialog.value.id],
-        () => {
-            if (userDialog.value.visible && !userDialog.value.loading) {
-                loadLastActiveTab();
-            }
+    watch([() => userDialog.value.visible, () => userDialog.value.loading, () => userDialog.value.id], () => {
+        if (userDialog.value.visible && !userDialog.value.loading) {
+            loadLastActiveTab();
         }
-    );
+    });
 
     // The dialog can finish loading before this mounts, so the watcher above
     // never fires for it
@@ -305,41 +234,16 @@
         const userId = userDialog.value.id;
         if (tabName === 'Info') {
             infoTabRef.value?.onTabActivated();
-        } else if (tabName === 'mutual') {
-            if (userId === currentUser.value.id) {
-                userDialog.value.activeTab = 'Info';
-                userDialog.value.lastActiveTab = 'Info';
-                return;
-            }
-            if (props.previousIds.mutualFriend !== userId) {
-                props.updatePreviousId('mutualFriend', userId);
-                mutualFriendsTabRef.value?.getUserMutualFriends(userId);
-            }
         } else if (tabName === 'Groups') {
             if (props.previousIds.group !== userId) {
                 props.updatePreviousId('group', userId);
                 groupsTabRef.value?.getUserGroups(userId);
-            }
-        } else if (tabName === 'Avatars') {
-            avatarsTabRef.value?.setUserDialogAvatars(userId);
-            if (props.previousIds.avatar !== userId) {
-                props.updatePreviousId('avatar', userId);
-                if (userId === currentUser.value.id) {
-                    refreshUserDialogAvatars();
-                } else {
-                    avatarsTabRef.value?.setUserDialogAvatarsRemote(userId);
-                }
             }
         } else if (tabName === 'Worlds') {
             worldsTabRef.value?.setUserDialogWorlds(userId);
             if (props.previousIds.world !== userId) {
                 props.updatePreviousId('world', userId);
                 worldsTabRef.value?.refreshUserDialogWorlds();
-            }
-        } else if (tabName === 'favorite-worlds') {
-            if (props.previousIds.favoriteWorld !== userId) {
-                props.updatePreviousId('favoriteWorld', userId);
-                favoriteWorldsTabRef.value?.getUserFavoriteWorlds(userId);
             }
         } else if (tabName === 'Activity') {
             activityTabRef.value?.loadOnlineFrequency(userId);
@@ -373,53 +277,10 @@
     });
 
     /**
-     * @param badge
-     */
-    async function toggleBadgeVisibility(badge) {
-        if (badge.hidden) {
-            badge.showcased = false;
-        }
-        const args = await miscRequest.updateBadge({
-            badgeId: badge.badgeId,
-            hidden: badge.hidden,
-            showcased: badge.showcased
-        });
-        handleBadgeUpdate(args);
-    }
-
-    /**
-     * @param badge
-     */
-    async function toggleBadgeShowcased(badge) {
-        if (badge.showcased) {
-            badge.hidden = false;
-        }
-        const args = await miscRequest.updateBadge({
-            badgeId: badge.badgeId,
-            hidden: badge.hidden,
-            showcased: badge.showcased
-        });
-        handleBadgeUpdate(args);
-    }
-
-    /**
-     * @param args
-     */
-    function handleBadgeUpdate(args) {
-        if (args.json) {
-            toast.success(t('message.badge.updated'));
-        }
-    }
-
-    /**
      * @param displayName
      */
     function copyUserDisplayName(displayName) {
         copyToClipboard(displayName, 'User DisplayName copied to clipboard');
-    }
-
-    function closeInviteDialog() {
-        clearInviteImageUpload();
     }
 </script>
 

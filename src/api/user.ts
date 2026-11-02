@@ -1,24 +1,12 @@
 import type {
-    AccountStanding,
-    ChangeUserTagsRequest,
     CurrentUser,
-    Feedback,
     GetMutualFriends,
-    GetMutualGroups,
-    GetUserNotes,
-    LimitedUserGroups,
     LimitedUserSearch,
     MutualFriend,
-    Mutuals,
-    PrivateProfile,
     PublicProfile,
     SearchUsers,
-    UpdateProfileRequest,
-    UpdateUserClientConfigRequest,
     UpdateUserRequest,
-    User,
-    UserClientConfig,
-    UserNote
+    User
 } from 'vrchat';
 import type { Json, VrcxCurrentUser, VrcxUser } from '../types/vrcx';
 import { patchAndRefetchActiveQuery, queryKeys } from '../queries';
@@ -61,49 +49,6 @@ const userReq = {
         });
     },
 
-    addUserTags(params: ChangeUserTagsRequest): Promise<{ json: Json<CurrentUser>; params: ChangeUserTagsRequest }> {
-        return request(`users/${getCurrentUserId()}/addTags`, {
-            method: 'POST',
-            params
-        }).then((json) => {
-            const args = {
-                json,
-                params
-            };
-            applyCurrentUser(json);
-            return args;
-        });
-    },
-
-    removeUserTags(params: ChangeUserTagsRequest): Promise<{ json: Json<CurrentUser>; params: ChangeUserTagsRequest }> {
-        return request(`users/${getCurrentUserId()}/removeTags`, {
-            method: 'POST',
-            params
-        }).then((json) => {
-            const args = {
-                json,
-                params
-            };
-            applyCurrentUser(json);
-            return args;
-        });
-    },
-
-    getUserFeedback(params: { userId: string }): Promise<{ json: Json<Feedback[]>; params: { userId: string } }> {
-        return request(`users/${params.userId}/feedback`, {
-            method: 'GET',
-            params: {
-                n: 100
-            }
-        }).then((json) => {
-            const args = {
-                json,
-                params
-            };
-            return args;
-        });
-    },
-
     saveCurrentUser(
         params: UpdateUserRequest
     ): Promise<{ json: Json<CurrentUser>; ref: VrcxCurrentUser; params: UpdateUserRequest }> {
@@ -126,50 +71,10 @@ const userReq = {
         });
     },
 
-    getUserNotes(params: GetUserNotes['query']): Promise<{ json: Json<UserNote[]>; params: GetUserNotes['query'] }> {
-        return request(`userNotes`, {
-            method: 'GET',
-            params
-        }).then((json) => {
-            const args = {
-                json,
-                params
-            };
-            return args;
-        });
-    },
-
-    getMutualCounts(params: { userId: string }): Promise<{ json: Json<Mutuals>; params: { userId: string } }> {
-        return request(`users/${params.userId}/mutuals`, {
-            method: 'GET'
-        }).then((json) => {
-            const args = {
-                json,
-                params
-            };
-            return args;
-        });
-    },
-
     getMutualFriends(
         params: GetMutualFriends['path'] & GetMutualFriends['query']
     ): Promise<{ json: Json<MutualFriend[]>; params: GetMutualFriends['path'] & GetMutualFriends['query'] }> {
         return request(`users/${params.userId}/mutuals/friends`, {
-            method: 'GET',
-            params
-        }).then((json) => {
-            const args = {
-                json,
-                params
-            };
-            return args;
-        });
-    },
-
-    getMutualGroups(
-        params: GetMutualGroups['path'] & GetMutualGroups['query']
-    ): Promise<{ json: Json<LimitedUserGroups[]>; params: GetMutualGroups['path'] & GetMutualGroups['query'] }> {
-        return request(`users/${params.userId}/mutuals/groups`, {
             method: 'GET',
             params
         }).then((json) => {
@@ -199,55 +104,6 @@ const userReq = {
         });
     },
 
-    getPrivateProfile(params: { userId: string }): Promise<{ json: Json<PrivateProfile>; params: { userId: string } }> {
-        return request(`profile/${params.userId}/private`, {
-            method: 'GET'
-        }).then((json) => {
-            const args = {
-                json,
-                params
-            };
-            return args;
-        });
-    },
-
-    getClientConfig(): Promise<{ json: Json<UserClientConfig> }> {
-        return request(`users/${getCurrentUserId()}/clientConfig`, {
-            method: 'GET'
-        }).then((json) => {
-            const args = {
-                json
-            };
-            return args;
-        });
-    },
-
-    saveClientConfig(
-        params: UpdateUserClientConfigRequest
-    ): Promise<{ json: Json<UserClientConfig>; params: UpdateUserClientConfigRequest }> {
-        return request(`users/${getCurrentUserId()}/clientConfig`, {
-            method: 'PUT',
-            params
-        }).then((json) => {
-            const args = {
-                json,
-                params
-            };
-            return args;
-        });
-    },
-
-    getAccountStanding(): Promise<{ json: AccountStanding }> {
-        return request('auth/user/accountStanding', {
-            method: 'GET'
-        }).then((json) => {
-            const args = {
-                json
-            };
-            return args;
-        });
-    },
-
     getSelfProfile(): Promise<{ json: Json<PublicProfile>; params: {} }> {
         return request(`profile/${getCurrentUserId()}`, {
             method: 'GET',
@@ -258,63 +114,6 @@ const userReq = {
             const args = {
                 json,
                 params: {}
-            };
-            return args;
-        });
-    },
-
-    saveProfile(params: UpdateProfileRequest): Promise<{ json: Json<PublicProfile>; params: UpdateProfileRequest }> {
-        return request(`profile/${getCurrentUserId()}`, {
-            method: 'PUT',
-            params
-        }).then((json) => {
-            const args = {
-                json,
-                params
-            };
-            return args;
-        });
-    },
-
-    saveProfileTheme(params: {
-        buttonColor: string;
-        iconColor: string;
-        themeId: string;
-        name: string;
-        subtextColor: string;
-    }) {
-        return request(`profile/theme/${params.themeId}`, {
-            method: 'PUT',
-            params
-        }).then((json) => {
-            const args = {
-                json,
-                params
-            };
-            return args;
-        });
-    },
-
-    createProfileTheme(params: { buttonColor?: string; iconColor?: string; name: string; subtextColor?: string }) {
-        return request(`profile/theme`, {
-            method: 'POST',
-            params
-        }).then((json) => {
-            const args = {
-                json,
-                params
-            };
-            return args;
-        });
-    },
-
-    deleteProfileTheme(params: { id: string }) {
-        return request(`profile/theme/${params.id}`, {
-            method: 'DELETE'
-        }).then((json) => {
-            const args = {
-                json,
-                params
             };
             return args;
         });

@@ -31,23 +31,11 @@
                             class="mt-2"
                             size="sm"
                             variant="outline"
-                            :disabled="
-                                remoteFriendFavoriteGroupItems.length === 0 &&
-                                localFriendFavoriteGroupItems.length === 0
-                            "
+                            :disabled="localFriendFavoriteGroupItems.length === 0"
                             >{{ t('dialog.invite.add_favorite_friends') }}</Button
                         >
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" class="w-48">
-                        <DropdownMenuItem
-                            v-for="group in remoteFriendFavoriteGroupItems"
-                            :key="group.key"
-                            @select.prevent
-                            @click="addGroupOnlineFriendsToInvite(group)">
-                            {{ group.displayName }}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator
-                            v-if="remoteFriendFavoriteGroupItems.length && localFriendFavoriteGroupItems.length" />
                         <DropdownMenuItem
                             v-for="group in localFriendFavoriteGroupItems"
                             :key="group.key"
@@ -99,67 +87,36 @@
             </div>
 
             <DialogFooter>
-                <Button
-                    variant="secondary"
-                    class="mr-2"
-                    :disabled="inviteDialog.loading || !inviteDialog.userIds.length"
-                    @click="showSendInviteDialog"
-                    >{{ t('dialog.invite.invite_with_message') }}</Button
-                >
                 <Button :disabled="inviteDialog.loading || !inviteDialog.userIds.length" @click="sendInvite">{{
                     t('dialog.invite.invite')
                 }}</Button>
             </DialogFooter>
         </DialogContent>
-
-        <SendInviteDialog
-            v-model:sendInviteDialogVisible="sendInviteDialogVisible"
-            v-model:sendInviteDialog="sendInviteDialog"
-            :invite-dialog="inviteDialog"
-            @closeInviteDialog="closeInviteDialog" />
     </Dialog>
 </template>
 
 <script setup>
     import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-    import { computed, ref } from 'vue';
+    import { computed } from 'vue';
     import { Button } from '@/components/ui/button';
     import { Check as CheckIcon } from 'lucide-vue-next';
     import { storeToRefs } from 'pinia';
     import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
 
-    import {
-        useFavoriteStore,
-        useFriendStore,
-        useGalleryStore,
-        useInviteStore,
-        useModalStore,
-        useUserStore
-    } from '../../../stores';
+    import { useFavoriteStore, useFriendStore, useModalStore, useUserStore } from '../../../stores';
     import { parseLocation } from '../../../shared/utils';
     import { useUserDisplay } from '../../../composables/useUserDisplay';
     import { instanceRequest, notificationRequest } from '../../../api';
     import { VirtualCombobox } from '../../ui/virtual-combobox';
-    import {
-        DropdownMenu,
-        DropdownMenuContent,
-        DropdownMenuItem,
-        DropdownMenuSeparator,
-        DropdownMenuTrigger
-    } from '../../ui/dropdown-menu';
-
-    import SendInviteDialog from './SendInviteDialog.vue';
+    import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../../ui/dropdown-menu';
 
     const { userImage, userStatusClass } = useUserDisplay();
     const friendStore = useFriendStore();
     const { vipFriends, onlineFriends, activeFriends, friends } = storeToRefs(friendStore);
     const favoriteStore = useFavoriteStore();
-    const { favoriteFriendGroups, localFriendFavoriteGroups, localFriendFavorites, groupedByGroupKeyFavoriteFriends } =
-        storeToRefs(favoriteStore);
-    const { refreshInviteMessageTableData } = useInviteStore();
+    const { localFriendFavoriteGroups, localFriendFavorites } = storeToRefs(favoriteStore);
     const { currentUser } = storeToRefs(useUserStore());
-    const { clearInviteImageUpload } = useGalleryStore();
 
     const modalStore = useModalStore();
 
@@ -172,13 +129,6 @@
     });
 
     const emit = defineEmits(['closeInviteDialog']);
-
-    const sendInviteDialogVisible = ref(false);
-    const sendInviteDialog = ref({
-        messageSlot: {},
-        userId: '',
-        params: {}
-    });
 
     const friendSections = computed(() => [
         {
@@ -278,21 +228,6 @@
         emit('closeInviteDialog');
     }
 
-    /**
-     * @param params
-     * @param userId
-     */
-    function showSendInviteDialog(params, userId) {
-        sendInviteDialog.value = {
-            params,
-            userId,
-            messageSlot: {}
-        };
-        refreshInviteMessageTableData('message');
-        clearInviteImageUpload();
-        sendInviteDialogVisible.value = true;
-    }
-
     function addSelfToInvite() {
         const D = props.inviteDialog;
         if (!D.userIds.includes(currentUser.value.id)) {
@@ -321,19 +256,6 @@
         return false;
     }
 
-    const remoteFriendFavoriteGroupItems = computed(() =>
-        favoriteFriendGroups.value
-            .filter((group) => {
-                const favorites = groupedByGroupKeyFavoriteFriends.value[group.key];
-                return favorites?.length && hasOnlineFriend(favorites.map((f) => f.id));
-            })
-            .map((group) => ({
-                key: group.key,
-                displayName: group.displayName,
-                type: 'remote'
-            }))
-    );
-
     const localFriendFavoriteGroupItems = computed(() =>
         localFriendFavoriteGroups.value
             .filter((groupName) => {
@@ -353,14 +275,7 @@
      */
     function addGroupOnlineFriendsToInvite(group) {
         const D = props.inviteDialog;
-        let userIds;
-
-        if (group.type === 'remote') {
-            const favorites = groupedByGroupKeyFavoriteFriends.value[group.key] || [];
-            userIds = favorites.map((fav) => fav.id);
-        } else {
-            userIds = localFriendFavorites.value[group.localName] || [];
-        }
+        const userIds = localFriendFavorites.value[group.localName] || [];
 
         for (const userId of userIds) {
             const ctx = friends.value.get(userId);

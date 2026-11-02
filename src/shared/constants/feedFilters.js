@@ -76,11 +76,6 @@ function feedFiltersOptions() {
             options: getOptions(['Off', 'VIP', 'Friends'])
         },
         {
-            key: 'boop',
-            name: 'Boop',
-            options: getOptions(['Off', 'VIP', 'Friends'])
-        },
-        {
             key: 'friendRequest',
             name: 'Friend Request',
             options: getOptions(['Off', 'On'])
@@ -162,20 +157,6 @@ function feedFiltersOptions() {
             tooltip: "When the instance you're in has been closed preventing anyone from joining"
         },
         {
-            key: 'VideoPlay',
-            name: 'Video Play',
-            options: getOptions(['Off', 'On']),
-            tooltip: 'Requires VRCX YouTube API option enabled',
-            tooltipWarning: true
-        },
-        {
-            key: 'Event',
-            name: 'Miscellaneous Events',
-            options: getOptions(['Off', 'On']),
-            tooltip:
-                'Misc event from VRC game log: VRC crash auto rejoin, shader keyword limit, joining instance blocked by master, error loading video, audio device changed, error joining instance, kicked from instance, VRChat failing to start OSC server, etc...'
-        },
-        {
             key: 'External',
             name: 'External App',
             options: getOptions(['Off', 'On'])
@@ -199,33 +180,7 @@ function feedFiltersOptions() {
             key: 'MutedOnPlayerLeft',
             name: 'Muted Player Leaves',
             options: getOptions(['Off', 'VIP', 'Friends', 'Everyone'])
-        },
-        {
-            key: 'AvatarChange',
-            name: 'Lobby Avatar Change',
-            options: getOptions(['Off', 'VIP', 'Friends', 'Everyone'])
         }
-    ];
-
-    const photonFeedFiltersOptions = [
-        {
-            key: 'PortalSpawn',
-            name: 'Portal Spawn',
-            options: getOptions(['Off', 'VIP', 'Friends', 'Everyone'])
-        },
-        {
-            key: 'ChatBoxMessage',
-            name: 'Lobby ChatBox Message',
-            options: getOptions(['Off', 'VIP', 'Friends', 'Everyone'])
-        },
-        { key: 'Blocked', name: 'Blocked', options: getOptions(['Off', 'On']) },
-        {
-            key: 'Unblocked',
-            name: 'Unblocked',
-            options: getOptions(['Off', 'On'])
-        },
-        { key: 'Muted', name: 'Muted', options: getOptions(['Off', 'On']) },
-        { key: 'Unmuted', name: 'Unmuted', options: getOptions(['Off', 'On']) }
     ];
 
     const notyFeedFiltersOptions = baseOptions;
@@ -241,8 +196,7 @@ function feedFiltersOptions() {
 
     return {
         notyFeedFiltersOptions,
-        wristFeedFiltersOptions,
-        photonFeedFiltersOptions
+        wristFeedFiltersOptions
     };
 }
 

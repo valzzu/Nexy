@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar'
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipWrapper } from '../../components/ui/tooltip';
-import { ArrowUpDown, Ban, BellOff, Check, Image, Link, MessageCircle, Reply, Tag, Trash2, X } from 'lucide-vue-next';
+import { ArrowUpDown, Ban, BellOff, Check, Image, Link, Reply, Tag, Trash2, X } from 'lucide-vue-next';
 import { storeToRefs } from 'pinia';
 
 import { formatDateFilter } from '../../shared/utils';
@@ -21,8 +21,6 @@ import { showUserDialog } from '../../coordinators/userCoordinator';
 import { showWorldDialog } from '../../coordinators/worldCoordinator';
 import { showGroupDialog } from '../../coordinators/groupCoordinator';
 
-import Emoji from '../../components/Emoji.vue';
-
 const { t, te } = i18n.global;
 
 const isGroupId = (id) => typeof id === 'string' && id.startsWith('grp_');
@@ -34,8 +32,6 @@ export const createColumns = ({
     showFullscreenImageDialog,
     getSmallThumbnailUrl,
     acceptFriendRequestNotification,
-    showSendInviteResponseDialog,
-    showSendInviteRequestResponseDialog,
     acceptRequestInvite,
     sendNotificationResponse,
     hideNotification,
@@ -43,8 +39,6 @@ export const createColumns = ({
     deleteNotificationLog,
     deleteNotificationLogPrompt
 }) => {
-    const { showSendBoopDialog } = useUserStore();
-
     const { shiftHeld } = storeToRefs(useUiStore());
     const { currentUser } = storeToRefs(useUserStore());
     const { lastLocation } = storeToRefs(useLocationStore());
@@ -66,7 +60,7 @@ export const createColumns = ({
         );
     };
 
-    const getResponseIcon = (response, notificationType) => {
+    const getResponseIcon = (response) => {
         if (response?.type === 'link') {
             return Link;
         }
@@ -80,7 +74,7 @@ export const createColumns = ({
             case 'bell-slash':
                 return BellOff;
             case 'reply':
-                return notificationType === 'boop' ? MessageCircle : Reply;
+                return Reply;
             default:
                 return Tag;
         }
@@ -332,21 +326,6 @@ export const createColumns = ({
             meta: { label: () => t('table.notification.photo') },
             cell: ({ row }) => {
                 const original = row.original;
-                if (original.type === 'boop') {
-                    const imageUrl = original.details?.imageUrl || original.imageUrl;
-                    if (!imageUrl || imageUrl.startsWith('default_')) {
-                        return null;
-                    }
-                    return (
-                        <Emoji
-                            class="cursor-pointer h-7.5 w-7.5 rounded object-cover"
-                            onClick={() => showFullscreenImageDialog(imageUrl)}
-                            imageUrl={imageUrl}
-                            size={30}
-                        />
-                    );
-                }
-
                 if (original.details?.imageUrl) {
                     const detailsUrl = getSmallThumbnailUrl(original.details.imageUrl);
                     return (
@@ -490,24 +469,6 @@ export const createColumns = ({
                                     </Tooltip>
                                 ) : null}
 
-                                {original.type === 'invite' ? (
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button
-                                                type="button"
-                                                class="inline-flex h-6 ml-1 items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
-                                                aria-label={t('view.notification.actions.decline_with_message')}
-                                                onClick={() => showSendInviteResponseDialog(original)}
-                                            >
-                                                <MessageCircle class="h-4 w-4" />
-                                            </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top">
-                                            <span>{t('view.notification.actions.decline_with_message')}</span>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                ) : null}
-
                                 {original.type === 'requestInvite' ? (
                                     <span class="inline-flex items-center">
                                         {canInvite() ? (
@@ -527,21 +488,6 @@ export const createColumns = ({
                                                 </TooltipContent>
                                             </Tooltip>
                                         ) : null}
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <button
-                                                    type="button"
-                                                    class="inline-flex h-6 ml-1 items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
-                                                    aria-label={t('view.notification.actions.decline_with_message')}
-                                                    onClick={() => showSendInviteRequestResponseDialog(original)}
-                                                >
-                                                    <MessageCircle class="h-4 w-4" />
-                                                </button>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="top">
-                                                <span>{t('view.notification.actions.decline_with_message')}</span>
-                                            </TooltipContent>
-                                        </Tooltip>
                                     </span>
                                 ) : null}
 
@@ -552,14 +498,10 @@ export const createColumns = ({
                                                   openNotificationLink(response.data);
                                                   return;
                                               }
-                                              if (response.icon === 'reply' && original.type === 'boop') {
-                                                  showSendBoopDialog(original.senderUserId);
-                                                  return;
-                                              }
                                               sendNotificationResponse(original.id, original.responses, response.type);
                                           };
 
-                                          const ResponseIcon = getResponseIcon(response, original.type);
+                                          const ResponseIcon = getResponseIcon(response);
 
                                           return (
                                               <Tooltip key={`${response.text}:${response.type}`}>

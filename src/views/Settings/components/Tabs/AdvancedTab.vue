@@ -2,7 +2,6 @@
     <div class="flex flex-col gap-10 py-2">
         <SettingsGroup :title="t('view.settings.advanced.advanced.vrchat_settings.header')">
             <SettingsItem
-                v-if="showVrchatOnlySettings"
                 :label="t('view.settings.advanced.advanced.relaunch_vrchat.header')"
                 :description="t('view.settings.advanced.advanced.relaunch_vrchat.description')"
                 toggle>
@@ -10,28 +9,6 @@
                     :model-value="relaunchVRChatAfterCrash"
                     :ariaLabel="t('view.settings.advanced.advanced.relaunch_vrchat.header')"
                     @update:modelValue="setRelaunchVRChatAfterCrash" />
-            </SettingsItem>
-
-            <SettingsItem
-                v-if="showVrchatOnlySettings"
-                :label="t('view.settings.advanced.advanced.vrchat_quit_fix.header')"
-                :description="t('view.settings.advanced.advanced.vrchat_quit_fix.description')"
-                toggle>
-                <Switch
-                    :model-value="vrcQuitFix"
-                    :ariaLabel="t('view.settings.advanced.advanced.vrchat_quit_fix.header')"
-                    @update:modelValue="setVrcQuitFix" />
-            </SettingsItem>
-
-            <SettingsItem
-                v-if="showVrchatOnlySettings"
-                :label="t('view.settings.advanced.advanced.auto_cache_management.header')"
-                :description="t('view.settings.advanced.advanced.auto_cache_management.description')"
-                toggle>
-                <Switch
-                    :model-value="autoSweepVRChatCache"
-                    :ariaLabel="t('view.settings.advanced.advanced.auto_cache_management.header')"
-                    @update:modelValue="setAutoSweepVRChatCache" />
             </SettingsItem>
 
             <SettingsItem
@@ -59,26 +36,6 @@
         </SettingsGroup>
 
         <SettingsGroup :title="t('view.settings.general.logging.header')">
-            <SettingsItem
-                v-if="showVrchatOnlySettings"
-                :label="t('view.settings.advanced.advanced.cache_debug.udon_exception_logging')"
-                toggle>
-                <Switch
-                    :model-value="udonExceptionLogging"
-                    :ariaLabel="t('view.settings.advanced.advanced.cache_debug.udon_exception_logging')"
-                    @update:modelValue="setUdonExceptionLogging" />
-            </SettingsItem>
-
-            <SettingsItem
-                v-if="showVrchatOnlySettings"
-                :label="t('view.settings.general.logging.resource_load')"
-                toggle>
-                <Switch
-                    :model-value="logResourceLoad"
-                    :ariaLabel="t('view.settings.general.logging.resource_load')"
-                    @update:modelValue="setLogResourceLoad" />
-            </SettingsItem>
-
             <SettingsItem :label="t('view.settings.general.logging.auto_login_delay')" toggle>
                 <Switch
                     :model-value="autoLoginDelayEnabled"
@@ -129,40 +86,6 @@
             </SettingsGroup>
         </template>
 
-        <SettingsGroup
-            v-if="showVrchatOnlySettings"
-            :title="t('view.settings.advanced.advanced.launch_commands.header')">
-            <SettingsItem
-                :label="t('view.settings.advanced.advanced.launch_commands.show_confirmation_on_switch_avatar_enable')"
-                class="mb-2"
-                :description="
-                    t('view.settings.advanced.advanced.launch_commands.show_confirmation_on_switch_avatar_tooltip')
-                "
-                toggle>
-                <Switch
-                    :model-value="showConfirmationOnSwitchAvatar"
-                    :ariaLabel="
-                        t('view.settings.advanced.advanced.launch_commands.show_confirmation_on_switch_avatar_enable')
-                    "
-                    @update:modelValue="setShowConfirmationOnSwitchAvatar" />
-            </SettingsItem>
-
-            <div class="flex gap-2">
-                <Button
-                    size="sm"
-                    variant="outline"
-                    @click="openExternalLink('https://github.com/vrcx-team/VRCX/wiki/Launch-parameters-&-VRCX.json')"
-                    >{{ t('view.settings.advanced.advanced.launch_commands.docs') }}</Button
-                >
-                <Button
-                    size="sm"
-                    variant="outline"
-                    @click="openExternalLink('https://github.com/Myrkie/open-in-vrcx')"
-                    >{{ t('view.settings.advanced.advanced.launch_commands.website_userscript') }}</Button
-                >
-            </div>
-        </SettingsGroup>
-
         <SettingsGroup :title="t('view.settings.advanced.advanced.cache_debug.header')">
             <div class="flex gap-2 flex-wrap">
                 <Button size="sm" variant="outline" @click="clearVRCXCache">{{
@@ -196,16 +119,8 @@
                     <span v-text="cacheSize.cachedWorlds"></span
                 ></span>
                 <span
-                    >{{ t('view.settings.advanced.advanced.cache_debug.avatar_cache') }}
-                    <span v-text="cacheSize.cachedAvatars"></span
-                ></span>
-                <span
                     >{{ t('view.settings.advanced.advanced.cache_debug.group_cache') }}
                     <span v-text="cacheSize.cachedGroups"></span
-                ></span>
-                <span
-                    >{{ t('view.settings.advanced.advanced.cache_debug.avatar_name_cache') }}
-                    <span v-text="cacheSize.cachedAvatarNames"></span
                 ></span>
                 <span
                     >{{ t('view.settings.advanced.advanced.cache_debug.instance_cache') }}
@@ -279,122 +194,7 @@
             </div>
         </SettingsGroup>
 
-        <SettingsGroup
-            v-if="showVrchatOnlySettings"
-            :title="t('view.settings.advanced.advanced.database_cleanup.header')">
-            <SettingsItem
-                :label="t('view.settings.advanced.advanced.database_cleanup.auto_cleanup')"
-                :description="t('view.settings.advanced.advanced.database_cleanup.auto_cleanup_description')">
-                <Select :model-value="avatarAutoCleanup" @update:modelValue="setAvatarAutoCleanup">
-                    <SelectTrigger class="w-36">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            <SelectItem value="Off">{{
-                                t('view.settings.advanced.advanced.database_cleanup.auto_cleanup_off')
-                            }}</SelectItem>
-                            <SelectItem value="30">{{
-                                t('view.settings.advanced.advanced.database_cleanup.auto_cleanup_30')
-                            }}</SelectItem>
-                            <SelectItem value="90">{{
-                                t('view.settings.advanced.advanced.database_cleanup.auto_cleanup_90')
-                            }}</SelectItem>
-                            <SelectItem value="180">{{
-                                t('view.settings.advanced.advanced.database_cleanup.auto_cleanup_180')
-                            }}</SelectItem>
-                            <SelectItem value="365">{{
-                                t('view.settings.advanced.advanced.database_cleanup.auto_cleanup_365')
-                            }}</SelectItem>
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
-            </SettingsItem>
-
-            <SettingsItem :label="t('view.settings.advanced.advanced.database_cleanup.purge_button')">
-                <Button size="sm" variant="outline" @click="isPurgeDialogVisible = true">
-                    <Trash2 class="h-4 w-4 mr-1" />
-                    {{ t('view.settings.advanced.advanced.database_cleanup.purge') }}
-                </Button>
-            </SettingsItem>
-        </SettingsGroup>
-
-        <Dialog
-            :open="isPurgeDialogVisible"
-            @update:open="
-                (open) => {
-                    if (!open) isPurgeDialogVisible = false;
-                }
-            ">
-            <DialogContent class="x-dialog sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>{{
-                        t('view.settings.advanced.advanced.database_cleanup.purge_confirm_title')
-                    }}</DialogTitle>
-                </DialogHeader>
-
-                <Alert variant="warning" class="mb-3">
-                    <TriangleAlert />
-                    <AlertDescription>
-                        {{ t('view.settings.advanced.advanced.database_cleanup.purge_confirm_alert') }}
-                    </AlertDescription>
-                </Alert>
-
-                <div class="flex flex-col gap-1 text-sm text-muted-foreground mb-3">
-                    <p>{{ t('view.settings.advanced.advanced.database_cleanup.purge_confirm_description_1') }}</p>
-                    <p>{{ t('view.settings.advanced.advanced.database_cleanup.purge_confirm_description_2') }}</p>
-                    <p>{{ t('view.settings.advanced.advanced.database_cleanup.purge_confirm_description_3') }}</p>
-                </div>
-
-                <SettingsItem :label="t('view.settings.advanced.advanced.database_cleanup.purge_older_than')">
-                    <Select v-model="selectedPurgePeriod">
-                        <SelectTrigger class="w-36">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                <SelectItem value="180">{{
-                                    t('view.settings.advanced.advanced.database_cleanup.purge_option_180')
-                                }}</SelectItem>
-                                <SelectItem value="365">{{
-                                    t('view.settings.advanced.advanced.database_cleanup.purge_option_365')
-                                }}</SelectItem>
-                                <SelectItem value="730">{{
-                                    t('view.settings.advanced.advanced.database_cleanup.purge_option_730')
-                                }}</SelectItem>
-                                <SelectItem value="all">{{
-                                    t('view.settings.advanced.advanced.database_cleanup.purge_option_all')
-                                }}</SelectItem>
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
-                </SettingsItem>
-
-                <DialogFooter>
-                    <Button variant="outline" size="sm" @click="isPurgeDialogVisible = false">
-                        {{ t('confirm.cancel_button') }}
-                    </Button>
-                    <Button size="sm" variant="destructive" :disabled="purgeInProgress" @click="handlePurge">
-                        <Trash2 class="h-4 w-4 mr-1" />
-                        {{ t('view.settings.advanced.advanced.database_cleanup.purge_confirm_button') }}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
         <SettingsGroup :title="t('view.settings.advanced_groups.diagnostics.header')">
-            <SettingsItem :label="t('view.profile.game_info.online_users')">
-                <div class="flex items-center gap-2">
-                    <span v-if="visits !== null" class="text-sm text-muted-foreground">{{
-                        t('view.profile.game_info.user_online', { count: visits })
-                    }}</span>
-                    <span v-if="instanceCount !== null" class="text-sm text-muted-foreground">{{
-                        t('view.profile.game_info.instances_active', { count: instanceCount })
-                    }}</span>
-                    <Button size="sm" variant="outline" @click="getVisits">{{ t('common.actions.refresh') }}</Button>
-                </div>
-            </SettingsItem>
-
             <SettingsItem :label="t('view.profile.config_json')">
                 <div class="flex items-center gap-2">
                     <Button size="sm" variant="outline" @click="refreshConfigTreeData()">{{
@@ -430,20 +230,13 @@
                 </SettingsItem>
             </SettingsGroup>
         </template>
-
-        <RegistryBackupDialog />
-        <PhotonSettings v-if="showVrchatOnlySettings && photonLoggingEnabled" />
     </div>
 </template>
 
 <script setup>
-    import { Trash2, TriangleAlert } from 'lucide-vue-next';
     import { computed, reactive, ref } from 'vue';
     import { Button } from '@/components/ui/button';
     import { Switch } from '@/components/ui/switch';
-    import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-    import { Alert, AlertDescription } from '@/components/ui/alert';
-    import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 
@@ -453,31 +246,22 @@
         useAdvancedSettingsStore,
         useAppearanceSettingsStore,
         useAuthStore,
-        useAvatarStore,
         useGeneralSettingsStore,
         useGroupStore,
         useInstanceStore,
-        usePhotonStore,
         useUiStore,
         useUserStore,
         useVRCXUpdaterStore,
         useWorldStore
     } from '@/stores';
-    import { authRequest, queryRequest } from '@/api';
+    import { authRequest } from '@/api';
     import { disableGameLogDialog } from '@/coordinators/gameLogCoordinator';
     import { clearVRCXCache } from '@/coordinators/vrcxCoordinator';
-    import { openExternalLink } from '@/shared/utils';
 
-    import PhotonSettings from '../PhotonSettings.vue';
-    import RegistryBackupDialog from '../../../Tools/dialogs/RegistryBackupDialog.vue';
     import SettingsGroup from '../SettingsGroup.vue';
     import SettingsItem from '../SettingsItem.vue';
 
     const { t } = useI18n();
-
-    // Crash relaunch, quit fix, VRChat cache sweep, Udon logging, deep links and the
-    // avatar feed act on VRChat's process, log and data; NexVR has none of them
-    const showVrchatOnlySettings = false;
 
     const advancedSettingsStore = useAdvancedSettingsStore();
     const { enablePrimaryPasswordChange } = useAuthStore();
@@ -485,17 +269,14 @@
     const { showConsole } = useUiStore();
 
     const generalSettingsStore = useGeneralSettingsStore();
-    const { udonExceptionLogging, logResourceLoad, autoLoginDelayEnabled } = storeToRefs(generalSettingsStore);
-    const { setUdonExceptionLogging, setLogResourceLoad, setAutoLoginDelayEnabled, promptAutoLoginDelaySeconds } =
-        generalSettingsStore;
+    const { autoLoginDelayEnabled } = storeToRefs(generalSettingsStore);
+    const { setAutoLoginDelayEnabled, promptAutoLoginDelaySeconds } = generalSettingsStore;
 
     const { cachedUsers } = useUserStore();
     const { cachedWorlds } = useWorldStore();
-    const { cachedAvatars, cachedAvatarNames } = useAvatarStore();
     const { cachedGroups } = useGroupStore();
     const { cachedInstances } = useInstanceStore();
 
-    const { photonLoggingEnabled } = storeToRefs(usePhotonStore());
     const { branch } = storeToRefs(useVRCXUpdaterStore());
 
     const { isDarkMode } = storeToRefs(useAppearanceSettingsStore());
@@ -503,58 +284,36 @@
     const {
         enablePrimaryPassword,
         relaunchVRChatAfterCrash,
-        vrcQuitFix,
-        autoSweepVRChatCache,
         selfInviteOverride,
         enableAppLauncher,
         enableAppLauncherAutoClose,
         enableAppLauncherRunProcessOnce,
-        showConfirmationOnSwitchAvatar,
         gameLogDisabled,
         sqliteTableSizes,
-        avatarAutoCleanup,
-        purgeInProgress,
         sentryErrorReporting
     } = storeToRefs(advancedSettingsStore);
 
     const {
         setRelaunchVRChatAfterCrash,
-        setVrcQuitFix,
-        setAutoSweepVRChatCache,
         setSelfInviteOverride,
         setEnableAppLauncher,
         setEnableAppLauncherAutoClose,
         setEnableAppLauncherRunProcessOnce,
-        setShowConfirmationOnSwitchAvatar,
         getSqliteTableSizes,
-        setAvatarAutoCleanup,
-        purgeAvatarFeedData,
         promptAutoClearVRCXCacheFrequency,
         setSentryErrorReporting
     } = advancedSettingsStore;
 
     const configTreeData = ref({});
-    const visits = ref(null);
-    const instanceCount = ref(null);
-    const selectedPurgePeriod = ref('180');
-    const isPurgeDialogVisible = ref(false);
 
     const cacheSize = reactive({
         cachedUsers: 0,
         cachedWorlds: 0,
-        cachedAvatars: 0,
         cachedGroups: 0,
-        cachedAvatarNames: 0,
         cachedInstances: 0
     });
 
     const isLinux = computed(() => IS_LINUX);
-
-    function handlePurge() {
-        const days = selectedPurgePeriod.value === 'all' ? null : parseInt(selectedPurgePeriod.value, 10);
-        isPurgeDialogVisible.value = false;
-        purgeAvatarFeedData(days);
-    }
 
     function openShortcutFolder() {
         AppApi.OpenShortcutFolder();
@@ -563,23 +322,12 @@
     function refreshCacheSize() {
         cacheSize.cachedUsers = cachedUsers.size;
         cacheSize.cachedWorlds = cachedWorlds.size;
-        cacheSize.cachedAvatars = cachedAvatars.size;
         cacheSize.cachedGroups = cachedGroups.size;
-        cacheSize.cachedAvatarNames = cachedAvatarNames.size;
         cacheSize.cachedInstances = cachedInstances.size;
     }
 
     async function refreshConfigTreeData() {
         await authRequest.getConfig();
         configTreeData.value = cachedConfig.value;
-    }
-
-    function getVisits() {
-        queryRequest.fetch('visits').then((args) => {
-            visits.value = args.json;
-        });
-        queryRequest.fetch('instanceCount').then((args) => {
-            instanceCount.value = args.json.instances;
-        });
     }
 </script>

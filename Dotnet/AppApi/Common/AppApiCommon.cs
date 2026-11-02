@@ -165,9 +165,34 @@ namespace VRCX
             return Program.Version;
         }
 
-        public bool VrcClosedGracefully()
+        /// <summary>
+        /// Whether the last NexVR session ended in a clean quit. Unity writes its
+        /// input system shutdown near the end of Player.log on a normal exit; a
+        /// crash stops the log before that line.
+        /// </summary>
+        public bool GameClosedGracefully()
         {
-            return LogWatcher.Instance.VrcClosedGracefully;
+            // the NexVR client's data folder under Wine/Proton isn't known, so
+            // never report a crash there rather than relaunch on every exit
+            if (!OperatingSystem.IsWindows())
+                return true;
+
+            var logPath = Path.Join(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "Low",
+                "NexVR", "NexVR", "Player.log");
+            try
+            {
+                using var stream = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                const int tailBytes = 16 * 1024;
+                stream.Seek(Math.Max(0, stream.Length - tailBytes), SeekOrigin.Begin);
+                using var reader = new StreamReader(stream, Encoding.UTF8);
+                return reader.ReadToEnd().Contains("Input System module state changed to: Shutdown.", StringComparison.Ordinal);
+            }
+            catch (Exception ex)
+            {
+                logger.Warn(ex, "Failed to read NexVR Player.log");
+                return true;
+            }
         }
 
         public Dictionary<string, int> GetColourBulk(List<object> userIds)

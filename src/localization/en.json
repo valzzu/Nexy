@@ -1190,7 +1190,7 @@
                         "description": "Encrypt Password (Disables Auto Login)"
                     },
                     "relaunch_vrchat": {
-                        "header": "Auto Relaunch VRChat After Crash",
+                        "header": "Auto Relaunch NexVR After Crash",
                         "description": "Automatically relaunch and rejoin the last instance after a crash."
                     },
                     "vrchat_quit_fix": {
@@ -3301,7 +3301,7 @@
             "invalid_config": "Invalid JSON in config.json"
         },
         "gamelog": {
-            "vrchat_must_be_closed": "VRChat needs to be closed before this option can be changed"
+            "vrchat_must_be_closed": "NexVR needs to be closed before this option can be changed"
         },
         "copy_failed": "Copy failed",
         "error": "Error"

@@ -252,114 +252,6 @@ namespace VRCX
             _cookieDirty = true; // force cookies to be saved for lastUserLoggedIn
         }
 
-        private async Task<HttpRequestMessage> BuildLegacyImageUploadRequest(string url, IDictionary<string, object> options)
-        {
-            var request = new HttpRequestMessage(HttpMethod.Post, url);
-            var boundary = "---------------------------" + DateTime.Now.Ticks.ToString("x");
-            var content = new MultipartFormDataContent(boundary);
-
-            if (options.TryGetValue("postData", out var postDataObject))
-            {
-                content.Add(new StringContent((string)postDataObject), "data");
-            }
-
-            var imageData = options["imageData"] as string;
-            var fileToUpload = Program.AppApiInstance.ResizeImageToFitLimits(Convert.FromBase64String(imageData), false);
-            var imageContent = new ByteArrayContent(fileToUpload);
-            imageContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
-            content.Add(imageContent, "image", "image.png");
-
-            request.Content = content;
-            return request;
-        }
-
-        private async Task<HttpRequestMessage> BuildUploadFilePutRequest(string url, IDictionary<string, object> options)
-        {
-            var request = new HttpRequestMessage(HttpMethod.Put, url);
-            var fileData = options["fileData"] as string;
-            var sentData = Convert.FromBase64CharArray(fileData.ToCharArray(), 0, fileData.Length);
-            var content = new ByteArrayContent(sentData);
-            content.Headers.ContentType = new MediaTypeHeaderValue(options["fileMIME"] as string);
-            if (options.TryGetValue("fileMD5", out var fileMd5))
-                content.Headers.ContentMD5 = Convert.FromBase64String(fileMd5 as string);
-            request.Content = content;
-            return request;
-        }
-
-        private async Task<HttpRequestMessage> BuildImageUploadRequest(string url, IDictionary<string, object> options)
-        {
-            var request = new HttpRequestMessage(HttpMethod.Post, url);
-            var boundary = "---------------------------" + DateTime.Now.Ticks.ToString("x");
-            var content = new MultipartFormDataContent(boundary);
-
-            if (options.TryGetValue("postData", out var postDataObject))
-            {
-                var jsonPostData = (JObject)JsonConvert.DeserializeObject((string)postDataObject);
-                if (jsonPostData != null)
-                {
-                    foreach (var data in jsonPostData)
-                    {
-                        content.Add(new StringContent(data.Value?.ToString() ?? string.Empty), data.Key);
-                    }
-                }
-            }
-
-            var imageData = options["imageData"] as string;
-            var matchingDimensions = options["matchingDimensions"] as bool? ?? false;
-            var fileToUpload = Program.AppApiInstance.ResizeImageToFitLimits(Convert.FromBase64String(imageData), matchingDimensions);
-
-            var imageContent = new ByteArrayContent(fileToUpload);
-            imageContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
-            content.Add(imageContent, "file", "blob");
-
-            request.Content = content;
-            return request;
-        }
-
-        private async Task<HttpRequestMessage> BuildPrintImageUploadRequest(string url, IDictionary<string, object> options)
-        {
-            if (options.TryGetValue("cropWhiteBorder", out var cropWhiteBorder) && (bool)cropWhiteBorder)
-            {
-                var oldImageData = options["imageData"] as string;
-                var ms = new MemoryStream(Convert.FromBase64String(oldImageData));
-                var print = await Image.LoadAsync(ms);
-                if (Program.AppApiInstance.CropPrint(ref print))
-                {
-                    var ms2 = new MemoryStream();
-                    await print.SaveAsPngAsync(ms2);
-                    options["imageData"] = Convert.ToBase64String(ms2.ToArray());
-                }
-            }
-
-            var request = new HttpRequestMessage(HttpMethod.Post, url);
-            var boundary = "---------------------------" + DateTime.Now.Ticks.ToString("x");
-            var content = new MultipartFormDataContent(boundary);
-
-            var imageData = options["imageData"] as string;
-            var fileToUpload = Program.AppApiInstance.ResizePrintImage(Convert.FromBase64String(imageData));
-
-            var imageContent = new ByteArrayContent(fileToUpload);
-            imageContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
-            imageContent.Headers.ContentLength = fileToUpload.Length;
-            content.Add(imageContent, "image", "image");
-
-            if (options.TryGetValue("postData", out var postDataObject))
-            {
-                var jsonPostData = JsonConvert.DeserializeObject<Dictionary<string, string>>(postDataObject.ToString());
-                if (jsonPostData != null)
-                {
-                    foreach (var (key, value) in jsonPostData)
-                    {
-                        var stringContent = new StringContent(value, Encoding.UTF8, "text/plain");
-                        content.Add(stringContent, key);
-                    }
-                }
-            }
-
-            request.Content = content;
-            return request;
-        }
-
         public async Task<string> ExecuteJson(string options)
         {
             var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(options);
@@ -378,51 +270,30 @@ namespace VRCX
                 var url = (string)options["url"];
                 HttpRequestMessage request;
 
-                // Handle special upload types
-                if (options.TryGetValue("uploadImageLegacy", out _))
+                var httpMethod = HttpMethod.Get;
+                if (options.TryGetValue("method", out var methodObj))
                 {
-                    request = await BuildLegacyImageUploadRequest(url, options);
+                    httpMethod = HttpMethod.Parse(methodObj.ToString());
                 }
-                else if (options.TryGetValue("uploadFilePUT", out _))
+
+                request = new HttpRequestMessage(httpMethod, url);
+
+                // Handle body for non-GET requests
+                if (httpMethod != HttpMethod.Get && options.TryGetValue("body", out var body))
                 {
-                    request = await BuildUploadFilePutRequest(url, options);
-                }
-                else if (options.TryGetValue("uploadImage", out _))
-                {
-                    request = await BuildImageUploadRequest(url, options);
-                }
-                else if (options.TryGetValue("uploadImagePrint", out _))
-                {
-                    request = await BuildPrintImageUploadRequest(url, options);
-                }
-                else
-                {
-                    // Standard request
-                    var httpMethod = HttpMethod.Get;
-                    if (options.TryGetValue("method", out var methodObj))
+                    var bodyContent = new StringContent((string)body, Encoding.UTF8);
+
+                    // Set content type if specified in headers
+                    if (options.TryGetValue("headers", out var headersObj))
                     {
-                        httpMethod = HttpMethod.Parse(methodObj.ToString());
-                    }
-
-                    request = new HttpRequestMessage(httpMethod, url);
-
-                    // Handle body for non-GET requests
-                    if (httpMethod != HttpMethod.Get && options.TryGetValue("body", out var body))
-                    {
-                        var bodyContent = new StringContent((string)body, Encoding.UTF8);
-
-                        // Set content type if specified in headers
-                        if (options.TryGetValue("headers", out var headersObj))
+                        var headersDict = ParseHeaders(headersObj);
+                        if (headersDict.TryGetValue("Content-Type", out var contentType))
                         {
-                            var headersDict = ParseHeaders(headersObj);
-                            if (headersDict.TryGetValue("Content-Type", out var contentType))
-                            {
-                                bodyContent.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
-                            }
+                            bodyContent.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
                         }
-
-                        request.Content = bodyContent;
                     }
+
+                    request.Content = bodyContent;
                 }
 
                 // Apply headers

@@ -5,7 +5,6 @@ import { useSearchIndexStore } from './searchIndex';
 import { useUserStore } from './user';
 import { showGroupDialog } from '../coordinators/groupCoordinator';
 import { showWorldDialog } from '../coordinators/worldCoordinator';
-import { showAvatarDialog } from '../coordinators/avatarCoordinator';
 import { showUserDialog } from '../coordinators/userCoordinator';
 
 import QuickSearchWorker from './quickSearchWorker.js?worker&inline';
@@ -39,8 +38,6 @@ export const useQuickSearchStore = defineStore('QuickSearch', () => {
 
     // Search results (updated from worker messages)
     const friendResults = ref([]);
-    const ownAvatarResults = ref([]);
-    const favoriteAvatarResults = ref([]);
     const ownWorldResults = ref([]);
     const favoriteWorldResults = ref([]);
     const ownGroupResults = ref([]);
@@ -49,8 +46,6 @@ export const useQuickSearchStore = defineStore('QuickSearch', () => {
     const hasResults = computed(
         () =>
             friendResults.value.length > 0 ||
-            ownAvatarResults.value.length > 0 ||
-            favoriteAvatarResults.value.length > 0 ||
             ownWorldResults.value.length > 0 ||
             favoriteWorldResults.value.length > 0 ||
             ownGroupResults.value.length > 0 ||
@@ -158,8 +153,6 @@ export const useQuickSearchStore = defineStore('QuickSearch', () => {
                 const friendEntry = friendStore.friends.get(item.id);
                 return { ...item, ref: friendEntry?.ref };
             });
-            ownAvatarResults.value = payload.ownAvatars;
-            favoriteAvatarResults.value = payload.favAvatars;
             ownWorldResults.value = payload.ownWorlds;
             favoriteWorldResults.value = payload.favWorlds;
             ownGroupResults.value = payload.ownGroups;
@@ -169,8 +162,6 @@ export const useQuickSearchStore = defineStore('QuickSearch', () => {
 
     function clearResults() {
         friendResults.value = [];
-        ownAvatarResults.value = [];
-        favoriteAvatarResults.value = [];
         ownWorldResults.value = [];
         favoriteWorldResults.value = [];
         ownGroupResults.value = [];
@@ -204,9 +195,6 @@ export const useQuickSearchStore = defineStore('QuickSearch', () => {
             case 'friend':
                 showUserDialog(item.id);
                 break;
-            case 'avatar':
-                showAvatarDialog(item.id);
-                break;
             case 'world':
                 showWorldDialog(item.id);
                 break;
@@ -220,8 +208,6 @@ export const useQuickSearchStore = defineStore('QuickSearch', () => {
         isOpen,
         query,
         friendResults,
-        ownAvatarResults,
-        favoriteAvatarResults,
         ownWorldResults,
         favoriteWorldResults,
         ownGroupResults,

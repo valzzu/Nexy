@@ -15,21 +15,6 @@ const playerModerationReq = {
     },
 
     // old-way: POST auth/user/blocks {blocked:userId}
-    sendPlayerModeration(
-        params: ModerateUserRequest
-    ): Promise<{ json: Json<PlayerModeration>; params: ModerateUserRequest }> {
-        return request('auth/user/playermoderations', {
-            method: 'POST',
-            params
-        }).then((json) => {
-            const args = {
-                json,
-                params
-            };
-            return args;
-        });
-    },
-
     // old-way: PUT auth/user/unblocks {blocked:userId}
     deletePlayerModeration(params: ModerateUserRequest): Promise<{ json: Json<Success>; params: ModerateUserRequest }> {
         return request('auth/user/unplayermoderate', {

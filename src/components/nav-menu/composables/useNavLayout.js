@@ -19,7 +19,7 @@ import { normalizeHiddenKeys, sanitizeLayout, withoutNavKeys } from '../navMenuU
 const NEXY_NAV_RESTORED_KEY = 'Nexy_navRestoredEntriesPlaced';
 const NEXY_RESTORED_NAV_KEYS = ['game-log', 'player-list', 'charts-instance', 'charts-hot-worlds'];
 
-export function useNavLayout({ t, locale, router, dashboardStore, dashboards, directAccessPaste, triggerTool }) {
+export function useNavLayout({ t, locale, router, dashboardStore, dashboards, triggerTool }) {
     const navLayout = ref([]);
     const navLayoutReady = ref(false);
     const navHiddenKeys = ref([]);
@@ -109,10 +109,7 @@ export function useNavLayout({ t, locale, router, dashboardStore, dashboards, di
     });
 
     const triggerNavAction = (entry) => {
-        const action = triggerNavEntryAction(entry, {
-            router,
-            directAccessPaste
-        });
+        const action = triggerNavEntryAction(entry, { router });
         if (action?.type === 'tool' && action.toolKey) {
             triggerTool?.(action.toolKey);
         }

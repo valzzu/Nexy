@@ -24,24 +24,6 @@ export function clearFriendSearchIndex() {
 /**
  * @param {object} ref
  */
-export function syncAvatarSearchIndex(ref) {
-    useSearchIndexStore().upsertAvatar(ref);
-}
-
-/**
- * @param {string} id
- */
-export function removeAvatarSearchIndex(id) {
-    useSearchIndexStore().removeAvatar(id);
-}
-
-export function clearAvatarSearchIndex() {
-    useSearchIndexStore().clearAvatars();
-}
-
-/**
- * @param {object} ref
- */
 export function syncWorldSearchIndex(ref) {
     useSearchIndexStore().upsertWorld(ref);
 }
@@ -93,7 +75,6 @@ export function resetSearchIndexOnLogin() {
         () => watchState.isLoggedIn,
         () => {
             searchIndexStore.clearFriends();
-            searchIndexStore.clearAvatars();
             searchIndexStore.clearWorlds();
             searchIndexStore.clearGroups();
             searchIndexStore.clearFavorites();

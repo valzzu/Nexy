@@ -1,12 +1,4 @@
-import { ref } from 'vue';
-
-import {
-    favoriteRequest,
-    friendRequest,
-    notificationRequest,
-    playerModerationRequest,
-    queryRequest
-} from '../../../api';
+import { friendRequest, notificationRequest, queryRequest } from '../../../api';
 import { copyToClipboard, parseLocation } from '../../../shared/utils';
 import { database } from '../../../services/database';
 import { recordRecentAction } from '../../../composables/useRecentActions';
@@ -20,26 +12,13 @@ import { recordRecentAction } from '../../../composables/useRecentActions';
  * @param deps.t
  * @param deps.toast
  * @param deps.modalStore
- * @param deps.currentUser
  * @param deps.cachedUsers
  * @param deps.friendLogTable
  * @param deps.lastLocation
  * @param deps.lastLocationDestination
- * @param deps.inviteGroupDialog
  * @param deps.showUserDialog
- * @param deps.showFavoriteDialog
- * @param deps.showAvatarDialog
- * @param deps.showAvatarAuthorDialog
- * @param deps.showModerateGroupDialog
- * @param deps.showSendBoopDialog
- * @param deps.showModerationReportDialog
- * @param deps.showGalleryPage
  * @param deps.getFriendRequest
  * @param deps.handleFriendDelete
- * @param deps.applyPlayerModeration
- * @param deps.handlePlayerModerationDelete
- * @param deps.refreshInviteMessageTableData
- * @param deps.clearInviteImageUpload
  * @param deps.instanceStore
  * @param deps.useNotificationStore
  * @param deps.showEditProfileDialog
@@ -51,40 +30,18 @@ export function useUserDialogCommands(
         t,
         toast,
         modalStore,
-        currentUser,
         cachedUsers,
         friendLogTable,
         lastLocation,
         lastLocationDestination,
-        inviteGroupDialog,
         showUserDialog,
-        showFavoriteDialog,
-        showAvatarDialog,
-        showAvatarAuthorDialog,
-        showModerateGroupDialog,
-        showSendBoopDialog,
-        showModerationReportDialog,
-        showGalleryPage,
         getFriendRequest,
         handleFriendDelete,
-        applyPlayerModeration,
-        handlePlayerModerationDelete,
-        refreshInviteMessageTableData,
-        clearInviteImageUpload,
         instanceStore,
         useNotificationStore,
         showEditProfileDialog
     }
 ) {
-    // --- Invite dialog state ---
-    const sendInviteDialogVisible = ref(false);
-    const sendInviteDialog = ref({
-        messageSlot: {},
-        userId: '',
-        params: {}
-    });
-    const sendInviteRequestDialogVisible = ref(false);
-
     // --- Internal helpers ---
 
     /**
@@ -138,81 +95,6 @@ export function useUserDialogCommands(
         D.outgoingRequest = false;
     }
 
-    /**
-     * @param {object} args
-     */
-    function handleSendPlayerModeration(args) {
-        const ref = applyPlayerModeration(args.json);
-        const D = userDialog.value;
-        if (D.visible === false || (ref.targetUserId !== D.id && ref.sourceUserId !== currentUser.value.id)) {
-            return;
-        }
-        if (ref.type === 'block') {
-            D.isBlock = true;
-        } else if (ref.type === 'mute') {
-            D.isMute = true;
-        } else if (ref.type === 'interactOff') {
-            D.isInteractOff = true;
-        } else if (ref.type === 'muteChat') {
-            D.isMuteChat = true;
-        }
-        toast.success(t('message.user.moderated'));
-    }
-
-    /**
-     * @param {string} userId
-     * @param {number} type
-     */
-    function setPlayerModeration(userId, type) {
-        const D = userDialog.value;
-        AppApi.SetVRChatUserModeration(currentUser.value.id, userId, type).then((result) => {
-            if (result) {
-                if (type === 4) {
-                    D.isShowAvatar = false;
-                    D.isHideAvatar = true;
-                } else if (type === 5) {
-                    D.isShowAvatar = true;
-                    D.isHideAvatar = false;
-                } else {
-                    D.isShowAvatar = false;
-                    D.isHideAvatar = false;
-                }
-            } else {
-                toast.error(t('message.avatar.change_moderation_failed'));
-            }
-        });
-    }
-
-    /**
-     * @param {object} params
-     * @param {string} userId
-     */
-    function showSendInviteDialogFn(params, userId) {
-        sendInviteDialog.value = {
-            params,
-            userId,
-            messageSlot: {}
-        };
-        refreshInviteMessageTableData('message');
-        clearInviteImageUpload();
-        sendInviteDialogVisible.value = true;
-    }
-
-    /**
-     * @param {object} params
-     * @param {string} userId
-     */
-    function showSendInviteRequestDialogFn(params, userId) {
-        sendInviteDialog.value = {
-            params,
-            userId,
-            messageSlot: {}
-        };
-        refreshInviteMessageTableData('request');
-        clearInviteImageUpload();
-        sendInviteRequestDialogVisible.value = true;
-    }
-
     // --- Command map ---
     // Direct commands: function
     // Confirmed commands: { confirm: () => ({title, description, ...}), handler: fn }
@@ -227,17 +109,11 @@ export function useUserDialogCommands(
                 D().id = '';
                 showUserDialog(userId);
             },
-            'Copy Profile URL': () => {
-                copyToClipboard(`https://vrchat.com/home/user/${D().id}`, t('message.user.url_copied'));
-            },
             'Copy DisplayName': () => {
                 copyToClipboard(D().ref.displayName, t('message.user.display_name_copied'));
             },
             'Copy UserId': () => {
                 copyToClipboard(D().id, t('message.user.id_copied'));
-            },
-            'Add Favorite': () => {
-                showFavoriteDialog('friend', D().id);
             },
             'Edit Profile': () => {
                 showEditProfileDialog();
@@ -255,31 +131,6 @@ export function useUserDialogCommands(
                         recordRecentAction(D().id, 'Request Invite');
                         return args;
                     });
-            },
-            'Invite Message': () => {
-                const L = parseLocation(lastLocation.value.location);
-                queryRequest
-                    .fetch('world', {
-                        worldId: L.worldId
-                    })
-                    .then((args) => {
-                        showSendInviteDialogFn(
-                            {
-                                instanceId: lastLocation.value.location,
-                                worldId: lastLocation.value.location,
-                                worldName: args.ref.name
-                            },
-                            D().id
-                        );
-                    });
-            },
-            'Request Invite Message': () => {
-                showSendInviteRequestDialogFn(
-                    {
-                        platform: 'standalonewindows'
-                    },
-                    D().id
-                );
             },
             Invite: () => {
                 let currentLocation = lastLocation.value.location;
@@ -308,73 +159,12 @@ export function useUserDialogCommands(
                             });
                     });
             },
-            'Show Avatar Author': () => {
-                const { currentAvatarImageUrl } = D().ref;
-                showAvatarAuthorDialog(D().id, D().$avatarInfo.ownerId, currentAvatarImageUrl);
-            },
-            'Show Fallback Avatar Details': () => {
-                const { fallbackAvatar } = D().ref;
-                if (fallbackAvatar) {
-                    showAvatarDialog(fallbackAvatar);
-                } else {
-                    toast.error(t('message.user.no_fallback_avatar'));
-                }
-            },
             'Previous Instances': () => {
                 instanceStore.showPreviousInstancesListDialog('user', D().ref);
-            },
-            'Manage Gallery': () => {
-                userDialog.value.visible = false;
-                showGalleryPage();
-            },
-            'Invite To Group': () => {
-                inviteGroupDialog.value.groupId = '';
-                inviteGroupDialog.value.userId = D().id;
-                inviteGroupDialog.value.visible = true;
-            },
-            'Send Boop': () => {
-                showSendBoopDialog(D().id);
-            },
-            'Report User': () => {
-                showModerationReportDialog({
-                    type: 'user',
-                    contentId: D().id,
-                    contentName: D().ref.displayName
-                });
-            },
-            'Group Moderation': () => {
-                showModerateGroupDialog(D().id);
-            },
-            'Hide Avatar': () => {
-                if (D().isHideAvatar) {
-                    setPlayerModeration(D().id, 0);
-                } else {
-                    setPlayerModeration(D().id, 4);
-                }
-            },
-            'Show Avatar': () => {
-                if (D().isShowAvatar) {
-                    setPlayerModeration(D().id, 0);
-                } else {
-                    setPlayerModeration(D().id, 5);
-                }
             },
             'Edit Note Memo': 'showEditNoteAndMemoDialog',
 
             // --- Confirmed commands ---
-            'Delete Favorite': {
-                confirm: () => ({
-                    title: t('confirm.title'),
-                    description: t('confirm.command_question', {
-                        command: t('dialog.user.actions.delete_favorite')
-                    })
-                }),
-                handler: (userId) => {
-                    favoriteRequest.deleteFavorite({
-                        objectId: userId
-                    });
-                }
-            },
             'Accept Friend Request': {
                 confirm: () => ({
                     title: t('confirm.title'),
@@ -459,130 +249,6 @@ export function useUserDialogCommands(
                     recordRecentAction(userId, 'Send Friend Request');
                 }
             },
-            'Moderation Unblock': {
-                confirm: () => ({
-                    title: t('confirm.title'),
-                    description: t('confirm.command_question', {
-                        command: t('dialog.user.actions.moderation_unblock')
-                    })
-                }),
-                handler: async (userId) => {
-                    const args = await playerModerationRequest.deletePlayerModeration({
-                        moderated: userId,
-                        type: 'block'
-                    });
-                    handlePlayerModerationDelete(args);
-                }
-            },
-            'Moderation Block': {
-                confirm: () => ({
-                    title: t('confirm.title'),
-                    description: t('confirm.command_question', {
-                        command: t('dialog.user.actions.moderation_block')
-                    }),
-                    destructive: true
-                }),
-                handler: async (userId) => {
-                    const args = await playerModerationRequest.sendPlayerModeration({
-                        moderated: userId,
-                        type: 'block'
-                    });
-                    handleSendPlayerModeration(args);
-                }
-            },
-            'Moderation Unmute': {
-                confirm: () => ({
-                    title: t('confirm.title'),
-                    description: t('confirm.command_question', {
-                        command: t('dialog.user.actions.moderation_unmute')
-                    })
-                }),
-                handler: async (userId) => {
-                    const args = await playerModerationRequest.deletePlayerModeration({
-                        moderated: userId,
-                        type: 'mute'
-                    });
-                    handlePlayerModerationDelete(args);
-                }
-            },
-            'Moderation Mute': {
-                confirm: () => ({
-                    title: t('confirm.title'),
-                    description: t('confirm.command_question', {
-                        command: t('dialog.user.actions.moderation_mute')
-                    }),
-                    destructive: true
-                }),
-                handler: async (userId) => {
-                    const args = await playerModerationRequest.sendPlayerModeration({
-                        moderated: userId,
-                        type: 'mute'
-                    });
-                    handleSendPlayerModeration(args);
-                }
-            },
-            'Moderation Enable Avatar Interaction': {
-                confirm: () => ({
-                    title: t('confirm.title'),
-                    description: t('confirm.command_question', {
-                        command: t('dialog.user.actions.moderation_enable_avatar_interaction')
-                    })
-                }),
-                handler: async (userId) => {
-                    const args = await playerModerationRequest.deletePlayerModeration({
-                        moderated: userId,
-                        type: 'interactOff'
-                    });
-                    handlePlayerModerationDelete(args);
-                }
-            },
-            'Moderation Disable Avatar Interaction': {
-                confirm: () => ({
-                    title: t('confirm.title'),
-                    description: t('confirm.command_question', {
-                        command: t('dialog.user.actions.moderation_disable_avatar_interaction')
-                    }),
-                    destructive: true
-                }),
-                handler: async (userId) => {
-                    const args = await playerModerationRequest.sendPlayerModeration({
-                        moderated: userId,
-                        type: 'interactOff'
-                    });
-                    handleSendPlayerModeration(args);
-                }
-            },
-            'Moderation Enable Chatbox': {
-                confirm: () => ({
-                    title: t('confirm.title'),
-                    description: t('confirm.command_question', {
-                        command: t('dialog.user.actions.moderation_enable_chatbox')
-                    })
-                }),
-                handler: async (userId) => {
-                    const args = await playerModerationRequest.deletePlayerModeration({
-                        moderated: userId,
-                        type: 'muteChat'
-                    });
-                    handlePlayerModerationDelete(args);
-                }
-            },
-            'Moderation Disable Chatbox': {
-                confirm: () => ({
-                    title: t('confirm.title'),
-                    description: t('confirm.command_question', {
-                        command: t('dialog.user.actions.moderation_disable_chatbox')
-                    }),
-                    destructive: true
-                }),
-                handler: async (userId) => {
-                    const args = await playerModerationRequest.sendPlayerModeration({
-                        moderated: userId,
-                        type: 'muteChat'
-                    });
-                    handleSendPlayerModeration(args);
-                }
-            },
             Unfriend: {
                 confirm: () => ({
                     title: t('confirm.title'),
@@ -665,9 +331,6 @@ export function useUserDialogCommands(
     }
 
     return {
-        sendInviteDialogVisible,
-        sendInviteDialog,
-        sendInviteRequestDialogVisible,
         userDialogCommand,
         registerCallbacks
     };

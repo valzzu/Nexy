@@ -1,37 +1,29 @@
-import { avatarModerationRequest, playerModerationRequest } from '../api';
-import { useAvatarStore } from '../stores/avatar';
+import { playerModerationRequest } from '../api';
 import { useModerationStore } from '../stores/moderation';
 
 /**
- * Refreshes all player and avatar moderations from the API.
- * Orchestrates across moderation store and avatar store.
+ * Refreshes all player moderations from the API.
  */
 export async function runRefreshPlayerModerationsFlow() {
     const moderationStore = useModerationStore();
-    const avatarStore = useAvatarStore();
 
     if (moderationStore.playerModerationTable.loading) {
         return;
     }
     moderationStore.playerModerationTable.loading = true;
     moderationStore.expirePlayerModerations();
-    Promise.all([playerModerationRequest.getPlayerModerations(), avatarModerationRequest.getAvatarModerations()])
+    playerModerationRequest
+        .getPlayerModerations()
         .then((res) => {
-            avatarStore.resetCachedAvatarModerations();
-            if (res[1]?.json) {
-                for (const json of res[1].json) {
-                    avatarStore.applyAvatarModeration(json);
-                }
-            }
-            if (res[0]?.json) {
-                for (let json of res[0].json) {
+            if (res?.json) {
+                for (const json of res.json) {
                     moderationStore.applyPlayerModeration(json);
                 }
             }
             moderationStore.deleteExpiredPlayerModerations();
         })
         .catch((error) => {
-            console.error('Failed to load player/avatar moderations:', error);
+            console.error('Failed to load player moderations:', error);
         })
         .finally(() => {
             moderationStore.playerModerationTable.loading = false;

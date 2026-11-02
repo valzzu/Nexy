@@ -39,18 +39,12 @@ describe('group query sync', () => {
     test('group mutations invalidate scoped active group queries', async () => {
         mockRequest.mockResolvedValue({ ok: true });
 
-        await groupRequest.setGroupRepresentation('grp_1', {
-            isRepresenting: true
-        });
         await groupRequest.deleteGroupPost({
             groupId: 'grp_1',
             postId: 'post_1'
         });
-        await groupRequest.setGroupMemberProps('usr_me', 'grp_1', {
-            visibility: 'visible'
-        });
 
-        expect(mockInvalidateQueries).toHaveBeenCalledTimes(3);
+        expect(mockInvalidateQueries).toHaveBeenCalledTimes(1);
         expect(mockInvalidateQueries).toHaveBeenCalledWith({
             queryKey: ['group', 'grp_1'],
             refetchType: 'active'

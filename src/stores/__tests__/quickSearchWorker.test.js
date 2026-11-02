@@ -44,8 +44,6 @@ describe('quickSearchWorker message protocol', () => {
             payload: {
                 seq: 7,
                 friends: [],
-                ownAvatars: [],
-                favAvatars: [],
                 ownWorlds: [],
                 favWorlds: [],
                 ownGroups: [],
@@ -62,14 +60,6 @@ describe('quickSearchWorker message protocol', () => {
             type: 'updateIndex',
             payload: {
                 friends: [],
-                avatars: [
-                    {
-                        id: 'avtr_1',
-                        name: 'Alpha Avatar',
-                        authorId: 'usr_me',
-                        imageUrl: ''
-                    }
-                ],
                 worlds: [
                     {
                         id: 'wrld_1',
@@ -86,7 +76,6 @@ describe('quickSearchWorker message protocol', () => {
                         imageUrl: ''
                     }
                 ],
-                favAvatars: [{ id: 'avtr_1', name: 'Alpha Avatar', imageUrl: '' }],
                 favWorlds: [{ id: 'wrld_1', name: 'Alpha World', imageUrl: '' }]
             }
         });
@@ -104,8 +93,6 @@ describe('quickSearchWorker message protocol', () => {
         const result = harness.sent.at(-1);
         expect(result.type).toBe('searchResult');
         expect(result.payload.seq).toBe(8);
-        expect(result.payload.ownAvatars).toHaveLength(1);
-        expect(result.payload.favAvatars).toHaveLength(0);
         expect(result.payload.ownWorlds).toHaveLength(1);
         expect(result.payload.favWorlds).toHaveLength(0);
         expect(result.payload.ownGroups).toHaveLength(1);

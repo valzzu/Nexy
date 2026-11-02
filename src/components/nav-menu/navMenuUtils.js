@@ -39,7 +39,7 @@ export function sanitizeLayout(layout, hiddenKeys, definitionMap, allDefinitions
     const normalizedHiddenKeys = normalizeHiddenKeys(hiddenKeys, definitionMap);
     const hiddenSet = new Set(normalizedHiddenKeys);
     const normalized = [];
-    const chartsKeys = ['charts-instance', 'charts-mutual', 'charts-hot-worlds'];
+    const chartsKeys = ['charts-instance', 'charts-hot-worlds'];
 
     const appendItemEntry = (key, target = normalized) => {
         if (!key || usedKeys.has(key) || !definitionMap.has(key)) {
@@ -53,7 +53,6 @@ export function sanitizeLayout(layout, hiddenKeys, definitionMap, allDefinitions
         if (chartsKeys.some((key) => usedKeys.has(key))) {
             return;
         }
-        // some charts may be unavailable (NexVR has no mutual-friends chart)
         const availableKeys = chartsKeys.filter((key) => definitionMap.has(key) && !hiddenSet.has(key));
         if (!availableKeys.length) {
             return;
@@ -148,13 +147,6 @@ export function sanitizeLayout(layout, hiddenKeys, definitionMap, allDefinitions
             }
         });
         normalized.splice(insertAt, 0, entry);
-    }
-
-    // Ensure direct-access is always the last item
-    const directAccessIdx = normalized.findIndex((entry) => entry.type === 'item' && entry.key === 'direct-access');
-    if (directAccessIdx !== -1 && directAccessIdx !== normalized.length - 1) {
-        const [directAccessEntry] = normalized.splice(directAccessIdx, 1);
-        normalized.push(directAccessEntry);
     }
 
     return normalized;

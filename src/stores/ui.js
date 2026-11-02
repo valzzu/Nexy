@@ -8,20 +8,12 @@ import { AppDebug } from '../services/appConfig';
 import { refreshCustomCss } from '../shared/utils/base/ui';
 import { updateLocalizedStrings } from '../plugins/i18n';
 import { useAppearanceSettingsStore } from './settings/appearance';
-import { useAvatarStore } from './avatar';
 import { useGroupStore } from './group';
-import {
-    clearGroupMemberModerationDialog,
-    showGroupDialog,
-    showGroupMemberModerationDialog,
-    showGroupRolesDialog
-} from '../coordinators/groupCoordinator';
+import { showGroupDialog } from '../coordinators/groupCoordinator';
 import { showWorldDialog } from '../coordinators/worldCoordinator';
-import { showAvatarDialog } from '../coordinators/avatarCoordinator';
 import { showUserDialog } from '../coordinators/userCoordinator';
 import { useInstanceStore } from './instance';
 import { useNotificationStore } from './notification';
-import { useSearchStore } from './search';
 import { useUserStore } from './user';
 import { useWorldStore } from './world';
 
@@ -30,12 +22,9 @@ export const useUiStore = defineStore('Ui', () => {
     const instanceStore = useInstanceStore();
     const router = useRouter();
     const keys = useMagicKeys();
-    const { directAccessPaste } = useSearchStore();
     const appearanceSettings = useAppearanceSettingsStore();
 
     const ctrlR = keys['Ctrl+R'];
-    const ctrlD = keys['Ctrl+D'];
-    const metaD = keys['Meta+D'];
     const shift = keys['Shift'];
     const ctrlShiftI = keys['Ctrl+Shift+I'];
     const altShiftR = keys['Alt+Shift+R'];
@@ -48,18 +37,6 @@ export const useUiStore = defineStore('Ui', () => {
     watch(ctrlR, (isPressed) => {
         if (isPressed) {
             location.reload();
-        }
-    });
-
-    watch(ctrlD, (isPressed) => {
-        if (isPressed) {
-            directAccessPaste();
-        }
-    });
-
-    watch(metaD, (isPressed) => {
-        if (isPressed) {
-            directAccessPaste();
         }
     });
 
@@ -150,10 +127,6 @@ export const useUiStore = defineStore('Ui', () => {
             showWorldDialog(item.tag, item.shortName);
             return;
         }
-        if (item.type === 'avatar') {
-            showAvatarDialog(item.id);
-            return;
-        }
         if (item.type === 'group') {
             showGroupDialog(item.id);
             return;
@@ -174,14 +147,6 @@ export const useUiStore = defineStore('Ui', () => {
             instanceStore.showPreviousInstancesInfoDialog(item.id);
             return;
         }
-        if (item.type === 'group-member-moderation') {
-            showGroupMemberModerationDialog(item.id);
-            return;
-        }
-        if (item.type === 'group-roles') {
-            showGroupRolesDialog(item.id);
-            return;
-        }
         console.error(`Unknown dialog crumb type: ${item.type}, closing dialog`);
         closeMainDialog();
     }
@@ -193,17 +158,12 @@ export const useUiStore = defineStore('Ui', () => {
     function closeMainDialog() {
         const userStore = useUserStore();
         const worldStore = useWorldStore();
-        const avatarStore = useAvatarStore();
         const groupStore = useGroupStore();
         const instanceStore = useInstanceStore();
 
         userStore.setUserDialogVisible(false);
         worldStore.setWorldDialogVisible(false);
-        avatarStore.setAvatarDialogVisible(false);
         groupStore.setGroupDialogVisible(false);
-        groupStore.setGroupMemberModerationVisible(false);
-        clearGroupMemberModerationDialog();
-        groupStore.setGroupRolesDialogVisible(false);
         instanceStore.hidePreviousInstancesDialogs();
         clearDialogCrumbs();
     }
@@ -221,7 +181,6 @@ export const useUiStore = defineStore('Ui', () => {
         const { type } = data;
         const userStore = useUserStore();
         const worldStore = useWorldStore();
-        const avatarStore = useAvatarStore();
         const groupStore = useGroupStore();
         const instanceStore = useInstanceStore();
         const isPrevInfo = type === 'previous-instances-info';
@@ -230,10 +189,7 @@ export const useUiStore = defineStore('Ui', () => {
             dialogCrumbs.value.length > 0 ||
             userStore.userDialog.visible ||
             worldStore.worldDialog.visible ||
-            avatarStore.avatarDialog.visible ||
             groupStore.groupDialog.visible ||
-            groupStore.groupMemberModeration.visible ||
-            groupStore.groupRolesDialog.visible ||
             (instanceStore.previousInstancesInfoDialog.visible && !isPrevInfo) ||
             (instanceStore.previousInstancesListDialog.visible && !isPrevList);
 
@@ -243,17 +199,8 @@ export const useUiStore = defineStore('Ui', () => {
         if (type !== 'world') {
             worldStore.setWorldDialogVisible(false);
         }
-        if (type !== 'avatar') {
-            avatarStore.setAvatarDialogVisible(false);
-        }
         if (type !== 'group') {
             groupStore.setGroupDialogVisible(false);
-        }
-        if (type !== 'group-member-moderation') {
-            groupStore.setGroupMemberModerationVisible(false);
-        }
-        if (type !== 'group-roles') {
-            groupStore.setGroupRolesDialogVisible(false);
         }
         if (!isPrevInfo) {
             instanceStore.setPreviousInstancesInfoDialogVisible(false);

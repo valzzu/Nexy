@@ -11,9 +11,6 @@ export async function initInteropApi(isVrOverlay = false) {
         window.WebApi = InteropApi.WebApi;
         window.VRCXStorage = InteropApi.VRCXStorage;
         window.SQLite = InteropApi.SQLite;
-        window.LogWatcher = InteropApi.LogWatcher;
-        window.Discord = InteropApi.Discord;
-        window.AssetBundleManager = InteropApi.AssetBundleManager;
         window.AppApiVrElectron = InteropApi.AppApiVrElectron;
 
         await configRepository.init();

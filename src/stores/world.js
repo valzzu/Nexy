@@ -1,7 +1,6 @@
 import { reactive, shallowReactive, watch } from 'vue';
 import { defineStore } from 'pinia';
 
-import { checkVRChatCache, formatFileSize } from '../shared/utils';
 import { preloadOwnWorlds } from '../coordinators/worldCoordinator';
 import { watchState } from '../services/watchState';
 
@@ -19,18 +18,12 @@ export const useWorldStore = defineStore('World', () => {
         avatarScalingDisabled: false,
         focusViewDisabled: false,
         rooms: [],
-        inCache: false,
-        cacheSize: '',
-        cacheLocked: false,
-        cachePath: '',
-        fileAnalysis: {},
         lastVisit: '',
         visitCount: 0,
         timeSpent: 0,
         isPC: false,
         isQuest: false,
         isIos: false,
-        hasPersistData: false,
         listings: []
     });
 
@@ -69,30 +62,11 @@ export const useWorldStore = defineStore('World', () => {
         worldDialog.isFavorite = value;
     }
 
-    function updateVRChatWorldCache() {
-        const D = worldDialog;
-        if (D.visible) {
-            D.inCache = false;
-            D.cacheSize = '';
-            D.cacheLocked = false;
-            D.cachePath = '';
-            checkVRChatCache(D.ref).then((cacheInfo) => {
-                if (cacheInfo.Item1 > 0) {
-                    D.inCache = true;
-                    D.cacheSize = formatFileSize(cacheInfo.Item1);
-                    D.cachePath = cacheInfo.Item3;
-                }
-                D.cacheLocked = cacheInfo.Item2;
-            });
-        }
-    }
-
     return {
         worldDialog,
         cachedWorlds,
         setWorldDialogVisible,
         setWorldDialogIsFavorite,
-        setWorldDialogLoading,
-        updateVRChatWorldCache
+        setWorldDialogLoading
     };
 });

@@ -31,40 +31,6 @@
                         </ToggleGroupItem>
                     </ToggleGroup>
                 </div>
-
-                <template v-if="photonLoggingEnabled">
-                    <br />
-                    <div class="mb-[5px] flex items-center">
-                        <span class="inline-block min-w-[190px] pr-2.5 text-right">{{
-                            t('view.feed.photon_event_logging')
-                        }}</span>
-                    </div>
-                    <div
-                        v-for="setting in photonFeedFiltersOptions"
-                        :key="setting.key"
-                        class="mb-[5px] flex items-center">
-                        <span class="inline-block min-w-[190px] pr-2.5 text-right">{{ setting.name }}</span>
-                        <ToggleGroup
-                            type="single"
-                            required
-                            variant="outline"
-                            size="sm"
-                            :model-value="currentSharedFeedFilters[setting.key]"
-                            @update:model-value="
-                                (value) => {
-                                    currentSharedFeedFilters[setting.key] = value;
-                                    saveSharedFeedFilters();
-                                }
-                            ">
-                            <ToggleGroupItem
-                                v-for="option in setting.options"
-                                :key="option.label"
-                                :value="option.label">
-                                {{ t(option.textKey) }}
-                            </ToggleGroupItem>
-                        </ToggleGroup>
-                    </div>
-                </template>
             </div>
 
             <DialogFooter>
@@ -85,7 +51,7 @@
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 
-    import { useNotificationsSettingsStore, usePhotonStore, useSharedFeedStore } from '../../../stores';
+    import { useNotificationsSettingsStore, useSharedFeedStore } from '../../../stores';
     import { ToggleGroup, ToggleGroupItem } from '../../../components/ui/toggle-group';
     import { feedFiltersOptions, sharedFeedFiltersDefaults } from '../../../shared/constants';
 
@@ -93,8 +59,7 @@
 
     const { t } = useI18n();
 
-    const { photonLoggingEnabled } = storeToRefs(usePhotonStore());
-    const { notyFeedFiltersOptions, wristFeedFiltersOptions, photonFeedFiltersOptions } = feedFiltersOptions();
+    const { notyFeedFiltersOptions, wristFeedFiltersOptions } = feedFiltersOptions();
     const { sharedFeedFilters } = storeToRefs(useNotificationsSettingsStore());
     const { loadSharedFeed } = useSharedFeedStore();
 

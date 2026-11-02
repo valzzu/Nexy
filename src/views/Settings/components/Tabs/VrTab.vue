@@ -214,28 +214,6 @@
         <!-- Wrist Overlay -->
         <WristOverlaySettings @open-feed-filters="showWristFeedFiltersDialog" />
 
-        <!-- VR Extras -->
-        <SettingsGroup :title="t('view.settings.vr.vr_extras.header')">
-            <SettingsItem
-                :label="t('view.settings.advanced.advanced.video_progress_pie.header')"
-                :description="t('view.settings.advanced.advanced.video_progress_pie.enable_tooltip')"
-                toggle>
-                <Switch
-                    :model-value="progressPie"
-                    :disabled="!openVR"
-                    :ariaLabel="t('view.settings.advanced.advanced.video_progress_pie.header')"
-                    @update:modelValue="changeYouTubeApi('VRCX_progressPie')" />
-            </SettingsItem>
-
-            <SettingsItem :label="t('view.settings.advanced.advanced.video_progress_pie.dance_world_only')" toggle>
-                <Switch
-                    :model-value="progressPieFilter"
-                    :disabled="!openVR"
-                    :ariaLabel="t('view.settings.advanced.advanced.video_progress_pie.dance_world_only')"
-                    @update:modelValue="changeYouTubeApi('VRCX_progressPieFilter')" />
-            </SettingsItem>
-        </SettingsGroup>
-
         <NotificationPositionDialog v-model:isNotificationPositionDialogVisible="isNotificationPositionDialogVisible" />
         <FeedFiltersDialog v-model:feedFiltersDialogMode="feedFiltersDialogMode" />
     </div>
@@ -276,7 +254,6 @@
     const advancedSettingsStore = useAdvancedSettingsStore();
     const wristOverlaySettingsStore = useWristOverlaySettingsStore();
     const { saveOpenVROption } = useVrStore();
-    const { updateVRLastLocation, updateOpenVR } = useVrStore();
 
     const {
         overlayToast,
@@ -293,8 +270,6 @@
 
     const { openVRAlways } = storeToRefs(wristOverlaySettingsStore);
     const { setOpenVRAlways } = wristOverlaySettingsStore;
-
-    const { progressPie, progressPieFilter } = storeToRefs(advancedSettingsStore);
 
     const {
         setOverlayToast,
@@ -342,18 +317,5 @@
             setOpenVRAlways();
             saveOpenVROption();
         }
-    }
-
-    /**
-     * @param configKey
-     */
-    async function changeYouTubeApi(configKey = '') {
-        if (configKey === 'VRCX_progressPie') {
-            advancedSettingsStore.setProgressPie();
-        } else if (configKey === 'VRCX_progressPieFilter') {
-            advancedSettingsStore.setProgressPieFilter();
-        }
-        updateVRLastLocation();
-        updateOpenVR();
     }
 </script>

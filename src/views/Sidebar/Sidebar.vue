@@ -102,13 +102,6 @@
                                     :ariaLabel="t('side_panel.settings.split_favorite_friends')"
                                     @update:modelValue="setIsSidebarDivideByFriendGroup" />
                             </Field>
-                            <Field orientation="horizontal">
-                                <FieldLabel>{{ t('view.settings.appearance.appearance.show_cosmetics') }}</FieldLabel>
-                                <Switch
-                                    :model-value="sidebarCosmetics"
-                                    :ariaLabel="t('view.settings.appearance.appearance.show_cosmetics')"
-                                    @update:modelValue="setSidebarCosmetics" />
-                            </Field>
 
                             <Separator />
 
@@ -250,16 +243,7 @@
                                                         </SelectValue>
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectGroup>
-                                                            <SelectItem
-                                                                v-for="group in favoriteFriendGroups"
-                                                                :key="group.key"
-                                                                :value="group.key">
-                                                                {{ group.displayName }}
-                                                            </SelectItem>
-                                                        </SelectGroup>
                                                         <template v-if="localFriendFavoriteGroups.length">
-                                                            <SelectSeparator />
                                                             <SelectGroup>
                                                                 <SelectItem
                                                                     v-for="group in localFriendFavoriteGroups"
@@ -326,15 +310,7 @@
 </template>
 
 <script setup>
-    import {
-        Select,
-        SelectContent,
-        SelectGroup,
-        SelectItem,
-        SelectSeparator,
-        SelectTrigger,
-        SelectValue
-    } from '@/components/ui/select';
+    import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
     import { Bell, ChevronDown, RefreshCw, Search, Settings } from 'lucide-vue-next';
     import { toast } from 'vue-sonner';
     import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
@@ -400,8 +376,7 @@
         isHideFriendsInSameInstance,
         isSameInstanceAboveFavorites,
         isSidebarDivideByFriendGroup,
-        sidebarFavoriteGroups,
-        sidebarCosmetics
+        sidebarFavoriteGroups
     } = storeToRefs(appearanceSettingsStore);
     const {
         setSidebarSortMethod1,
@@ -411,19 +386,14 @@
         setIsHideFriendsInSameInstance,
         setIsSameInstanceAboveFavorites,
         setIsSidebarDivideByFriendGroup,
-        setSidebarFavoriteGroups,
-        setSidebarCosmetics
+        setSidebarFavoriteGroups
     } = appearanceSettingsStore;
 
     const favoriteStore = useFavoriteStore();
-    const { favoriteFriendGroups, localFriendFavoriteGroups } = storeToRefs(favoriteStore);
+    const { localFriendFavoriteGroups } = storeToRefs(favoriteStore);
 
     const allFavoriteGroupKeys = computed(() => {
-        const keys = favoriteFriendGroups.value.map((g) => g.key);
-        for (const group of localFriendFavoriteGroups.value) {
-            keys.push('local:' + group);
-        }
-        return keys;
+        return localFriendFavoriteGroups.value.map((group) => 'local:' + group);
     });
 
     const resolvedSidebarFavoriteGroups = computed(() =>
@@ -440,8 +410,7 @@
     const selectedFavGroupLabel = computed(() => {
         const key = resolvedSidebarFavoriteGroups.value[0];
         if (!key) return '';
-        if (key.startsWith('local:')) return key.slice(6);
-        return favoriteFriendGroups.value.find((g) => g.key === key)?.displayName || key;
+        return key.startsWith('local:') ? key.slice(6) : key;
     });
 
     const CLEAR_VALUE = '__clear__';

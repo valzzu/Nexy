@@ -99,79 +99,6 @@
 
         <SettingsGroup :title="t('view.settings.appearance.user_dialog.header')">
             <SettingsItem
-                v-if="showVrchatOnlySettings"
-                :label="t('view.settings.appearance.appearance.vrc_profile_themes')"
-                toggle>
-                <Switch
-                    :model-value="displayVRCProfileThemes"
-                    :ariaLabel="t('view.settings.appearance.appearance.vrc_profile_themes')"
-                    @update:modelValue="
-                        setDisplayVRCProfileThemes();
-                        saveOpenVROption();
-                    " />
-            </SettingsItem>
-
-            <SettingsItem
-                v-if="showVrchatOnlySettings"
-                :label="t('view.settings.appearance.appearance.vrc_profile_backgrounds')"
-                :description="t('view.settings.appearance.appearance.vrc_profile_backgrounds_description')"
-                toggle>
-                <Switch
-                    :model-value="displayVRCProfileBackgrounds"
-                    :ariaLabel="t('view.settings.appearance.appearance.vrc_profile_backgrounds')"
-                    @update:modelValue="
-                        setDisplayVRCProfileBackgrounds();
-                        saveOpenVROption();
-                    " />
-            </SettingsItem>
-
-            <template v-if="showVrchatOnlySettings && displayVRCProfileBackgrounds">
-                <SettingsItem
-                    :label="t('view.settings.appearance.appearance.vrc_profile_backgrounds_opacity')"
-                    :description="t('view.settings.appearance.appearance.vrc_profile_backgrounds_opacity_description')">
-                    <NumberField
-                        v-model="profileBackgroundOpacity"
-                        :step="0.1"
-                        :min="0"
-                        :max="1"
-                        :format-options="{ maximumFractionDigits: 2 }"
-                        class="w-32"
-                        @update:modelValue="setProfileBackgroundOpacity">
-                        <NumberFieldContent>
-                            <NumberFieldDecrement />
-                            <NumberFieldInput />
-                            <NumberFieldIncrement />
-                        </NumberFieldContent>
-                    </NumberField>
-                </SettingsItem>
-            </template>
-
-            <SettingsItem
-                v-if="showVrchatOnlySettings"
-                :label="t('view.settings.appearance.appearance.vrc_profile_cosmetics')"
-                :description="t('view.settings.appearance.appearance.cosmetics_description')"
-                toggle>
-                <Switch
-                    :model-value="displayVRCProfileCosmetics"
-                    :ariaLabel="t('view.settings.appearance.appearance.vrc_profile_cosmetics')"
-                    @update:modelValue="
-                        setDisplayVRCProfileCosmetics();
-                        saveOpenVROption();
-                    " />
-            </SettingsItem>
-
-            <SettingsItem
-                v-if="showVrchatOnlySettings"
-                :label="t('view.settings.appearance.user_dialog.vrchat_notes')"
-                :description="t('view.settings.appearance.user_dialog.vrchat_notes_description')"
-                toggle>
-                <Switch
-                    :model-value="!hideUserNotes"
-                    :ariaLabel="t('view.settings.appearance.user_dialog.vrchat_notes')"
-                    @update:modelValue="setHideUserNotes" />
-            </SettingsItem>
-
-            <SettingsItem
                 :label="t('view.settings.appearance.user_dialog.vrcx_memos')"
                 :description="t('view.settings.appearance.user_dialog.vrcx_memos_description')"
                 toggle>
@@ -516,18 +443,11 @@
 
     const { t } = useI18n();
 
-    // Profile themes, backgrounds, cosmetics and notes are VRChat profile features
-    const showVrchatOnlySettings = false;
-
     const appearanceSettingsStore = useAppearanceSettingsStore();
     const { saveOpenVROption, updateVRConfigVars } = useVrStore();
 
     const {
         appLanguage,
-        displayVRCProfileThemes,
-        displayVRCProfileBackgrounds,
-        profileBackgroundOpacity,
-        displayVRCProfileCosmetics,
         appFontFamily,
         customFontFamily,
         appCjkFontPack,
@@ -540,7 +460,6 @@
         dtHour12,
         dtIsoFormat,
         weekStartsOn,
-        hideUserNotes,
         hideUserMemos,
         hideUnfriends,
         randomUserColours,
@@ -556,10 +475,6 @@
     const appLanguageDisplayName = computed(() => getLanguageName(String(appLanguage.value)));
 
     const {
-        setDisplayVRCProfileThemes,
-        setDisplayVRCProfileBackgrounds,
-        setProfileBackgroundOpacity,
-        setDisplayVRCProfileCosmetics,
         setHideNicknames,
         setShowInstanceIdInLocation,
         setIsAgeGatedInstancesVisible,
@@ -568,7 +483,6 @@
         setDtHour12,
         setDtIsoFormat,
         setWeekStartsOn,
-        setHideUserNotes,
         setHideUserMemos,
         setHideUnfriends,
         updateTrustColor,

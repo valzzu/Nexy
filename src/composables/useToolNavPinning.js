@@ -31,9 +31,7 @@ function insertToolNavItem(layout, navKey, t, placement = 'top-level') {
         return nextLayout;
     }
 
-    const insertIdx = nextLayout.findIndex(
-        (entry) => entry.type === 'item' && (entry.key === 'tools' || entry.key === 'direct-access')
-    );
+    const insertIdx = nextLayout.findIndex((entry) => entry.type === 'item' && entry.key === 'tools');
 
     if (placement === 'top-level') {
         if (insertIdx === -1) {

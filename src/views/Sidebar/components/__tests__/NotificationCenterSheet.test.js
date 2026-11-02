@@ -139,19 +139,4 @@ describe('NotificationCenterSheet.vue', () => {
             query: { fromCenter: '1' }
         });
     });
-
-    test('show invite response/request dialogs trigger side effects', async () => {
-        const wrapper = mount(NotificationCenterSheet);
-
-        await wrapper.get('[data-testid="emit-show-invite-response"]').trigger('click');
-
-        expect(mocks.inviteStore.refreshInviteMessageTableData).toHaveBeenCalledWith('response');
-        expect(mocks.galleryStore.clearInviteImageUpload).toHaveBeenCalled();
-        expect(wrapper.get('[data-testid="dialog-response"]').attributes('data-visible')).toBe('true');
-
-        await wrapper.get('[data-testid="emit-show-invite-request-response"]').trigger('click');
-
-        expect(mocks.inviteStore.refreshInviteMessageTableData).toHaveBeenCalledWith('requestResponse');
-        expect(wrapper.get('[data-testid="dialog-request-response"]').attributes('data-visible')).toBe('true');
-    });
 });

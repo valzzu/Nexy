@@ -7,7 +7,6 @@ import { useGameStore } from '../stores/game';
 import { useInstanceStore } from '../stores/instance';
 import { useLocationStore } from '../stores/location';
 import { useNotificationStore } from '../stores/notification';
-import { usePhotonStore } from '../stores/photon';
 import { useUserStore } from '../stores/user';
 import { useVrStore } from '../stores/vr';
 
@@ -126,7 +125,6 @@ export async function runSetCurrentUserLocationFlow(location, travelingToLocatio
 }
 
 export async function runLastLocationResetFlow(gameLogDate) {
-    const photonStore = usePhotonStore();
     const instanceStore = useInstanceStore();
     const gameLogStore = useGameLogStore();
     const vrStore = useVrStore();
@@ -139,7 +137,6 @@ export async function runLastLocationResetFlow(gameLogDate) {
         dateTime = new Date().toJSON();
     }
     const dateTimeStamp = Date.parse(dateTime);
-    photonStore.resetLocationPhotonState();
     const playerList = Array.from(locationStore.lastLocation.playerList.values());
     const dataBaseEntries = [];
     for (const ref of playerList) {
@@ -178,7 +175,6 @@ export async function runLastLocationResetFlow(gameLogDate) {
     instanceStore.updateCurrentInstanceWorld();
     vrStore.updateVRLastLocation();
     instanceStore.getCurrentInstanceUserList();
-    gameLogStore.resetLastMediaUrls();
     userStore.applyUserDialogLocation();
     instanceStore.applyWorldDialogInstances();
     instanceStore.applyGroupDialogInstances();

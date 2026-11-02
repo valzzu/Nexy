@@ -1,15 +1,10 @@
 import {
-    checkVRChatCache,
-    deleteVRChatCache,
     displayLocation,
     extractFileId,
     extractFileVersion,
     extractVariantVersion,
     getAvailablePlatforms,
-    getBundleLocation,
     getLaunchURL,
-    getPrintFileName,
-    getPrintLocalDate,
     isFriendOnline,
     isRealInstance,
     parseLocation
@@ -17,8 +12,6 @@ import {
 
 const utils = {
     getAvailablePlatforms,
-    deleteVRChatCache,
-    checkVRChatCache,
     getLaunchURL,
     extractFileId,
     extractFileVersion,
@@ -26,10 +19,7 @@ const utils = {
     isRealInstance,
     displayLocation,
     parseLocation,
-    getPrintFileName,
-    getPrintLocalDate,
-    isFriendOnline,
-    getBundleLocation
+    isFriendOnline
 };
 
 export { utils };

@@ -34,7 +34,6 @@
                                 <User class="size-4 text-muted-foreground" />
                             </AvatarFallback>
                         </Avatar>
-                        <IconFrame :icon-frame="user.iconFrame" />
                     </div>
                     <div class="flex-1 overflow-hidden">
                         <span
@@ -172,7 +171,6 @@
 <script setup>
     import { Eye, Image, Trash2, User } from 'lucide-vue-next';
     import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-    import IconFrame from '@/components/IconFrame.vue';
     import { Button } from '@/components/ui/button';
     import { Spinner } from '@/components/ui/spinner';
     import { ref, watch } from 'vue';

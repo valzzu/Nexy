@@ -13,6 +13,5 @@
     <Compile Include="../../Dotnet/Overlay/Electron/GLTextureWriter.cs" Link="GLTextureWriter.cs" />
     <Compile Include="../../Dotnet/AppApi/Common/NexvrLaunch.cs" Link="NexvrLaunch.cs" />
     <Compile Include="../../Dotnet/AppApi/Electron/GameLaunch.cs" Link="GameLaunch.cs" />
-    <Compile Include="../../Dotnet/AppApi/Electron/WindowsRegistryBridge.cs" Link="WindowsRegistryBridge.cs" />
   </ItemGroup>
 </Project>

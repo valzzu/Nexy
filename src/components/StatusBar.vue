@@ -126,48 +126,6 @@
                                 }}</span>
                             </div>
                         </TooltipWrapper>
-
-                        <div
-                            v-if="visibility.nowPlaying && nowPlaying.url"
-                            class="flex items-center gap-1 px-2 h-[22px] whitespace-nowrap border-r border-border min-w-0 max-w-[400px]">
-                            <i v-if="!isYouTubeNowPlaying" class="ri-play-fill text-[10px] shrink-0" />
-                            <i v-if="isYouTubeNowPlaying" class="ri-youtube-fill text-[#FF0000] shrink-0 text-[12px]" />
-                            <TooltipWrapper side="top" content-class="p-2">
-                                <template #content>
-                                    <div class="flex flex-col gap-1.5 max-w-[320px]">
-                                        <img
-                                            v-if="nowPlaying.thumbnailUrl"
-                                            :src="nowPlaying.thumbnailUrl"
-                                            class="w-full max-h-[180px] object-contain rounded"
-                                            loading="lazy" />
-                                        <span v-if="nowPlaying.name" class="whitespace-pre-wrap">{{
-                                            nowPlaying.name
-                                        }}</span>
-                                        <span v-if="!nowPlaying.urlHidden" class="break-all text-muted-foreground">{{
-                                            nowPlaying.url
-                                        }}</span>
-                                    </div>
-                                </template>
-                                <span
-                                    class="text-[11px] text-foreground truncate cursor-pointer"
-                                    @click="handleNowPlayingClick"
-                                    >{{ nowPlaying.name || nowPlaying.url }}</span
-                                >
-                            </TooltipWrapper>
-                            <template v-if="nowPlaying.playing">
-                                <div
-                                    class="shrink-0 h-[4px] rounded-full bg-muted overflow-hidden ml-1"
-                                    style="width: 40px"
-                                    :title="`${nowPlayingElapsedText} / ${nowPlayingLengthText}`">
-                                    <div
-                                        class="h-full rounded-full bg-foreground/60 transition-[width] duration-1000 ease-linear"
-                                        :style="{ width: `${nowPlaying.percentage}%` }" />
-                                </div>
-                                <span class="text-[10px] tabular-nums shrink-0">
-                                    {{ nowPlayingElapsedText }} / {{ nowPlayingLengthText }}
-                                </span>
-                            </template>
-                        </div>
                     </div>
 
                     <!-- Right section -->
@@ -281,12 +239,6 @@
                     WebSocket
                 </ContextMenuCheckboxItem>
                 <ContextMenuCheckboxItem
-                    :model-value="visibility.nowPlaying"
-                    @select.prevent
-                    @update:model-value="toggleVisibility('nowPlaying')">
-                    {{ t('status_bar.now_playing') }}
-                </ContextMenuCheckboxItem>
-                <ContextMenuCheckboxItem
                     :model-value="visibility.uptime"
                     @select.prevent
                     @update:model-value="toggleVisibility('uptime')">
@@ -346,7 +298,6 @@
         ContextMenuTrigger
     } from '@/components/ui/context-menu';
     import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-    import { storeToRefs } from 'pinia';
     import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
     import {
         NumberField,
@@ -355,14 +306,13 @@
         NumberFieldIncrement,
         NumberFieldInput
     } from '@/components/ui/number-field';
-    import { useGameLogStore, useGameStore, useGeneralSettingsStore, useUserStore, useVrcxStore } from '@/stores';
+    import { useGameStore, useGeneralSettingsStore, useUserStore, useVrcxStore } from '@/stores';
     import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-    import { formatSeconds, timeToText } from '@/shared/utils';
+    import { timeToText } from '@/shared/utils';
     import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
     import { useIntervalFn, useNow } from '@vueuse/core';
     import { TooltipWrapper } from '@/components/ui/tooltip';
     import { useI18n } from 'vue-i18n';
-    import { openExternalLink } from '@/shared/utils/appActions';
     import { wsState } from '@/services/websocket';
 
     import dayjs from 'dayjs';
@@ -389,31 +339,9 @@
     const isLinux = computed(() => IS_LINUX);
 
     const gameStore = useGameStore();
-    const gameLogStore = useGameLogStore();
     const userStore = useUserStore();
     const vrcxStore = useVrcxStore();
     const generalSettingsStore = useGeneralSettingsStore();
-
-    const { nowPlaying } = storeToRefs(gameLogStore);
-
-    const nowPlayingElapsedText = computed(() => {
-        if (!nowPlaying.value.playing) return '';
-        return formatSeconds(Math.floor(nowPlaying.value.elapsed));
-    });
-
-    const nowPlayingLengthText = computed(() => {
-        if (!nowPlaying.value.length) return '';
-        return formatSeconds(nowPlaying.value.length);
-    });
-
-    function handleNowPlayingClick() {
-        const url = nowPlaying.value.url;
-        if (url && !nowPlaying.value.urlHidden) {
-            openExternalLink(url);
-        }
-    }
-
-    const isYouTubeNowPlaying = computed(() => /youtu\.?be/i.test(nowPlaying.value.url));
 
     // --- Game session timer ---
     const gameHoverOpen = ref(false);

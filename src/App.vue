@@ -24,11 +24,7 @@
 <script setup>
     import { computed, onBeforeMount, onMounted } from 'vue';
 
-    import {
-        runCheckVRChatDebugLoggingFlow,
-        runUpdateIsGameRunningFlow,
-        runUpdateIsHmdAfkFlow
-    } from './coordinators/gameCoordinator';
+    import { runUpdateIsGameRunningFlow, runUpdateIsHmdAfkFlow } from './coordinators/gameCoordinator';
     import { Toaster } from './components/ui/sonner';
     import { TooltipProvider } from './components/ui/tooltip';
     import { createGlobalStores } from './stores';
@@ -72,9 +68,6 @@
         if (await store.vrcx.waitForDatabaseInit()) {
             await store.auth.migrateStoredUsers();
             store.auth.autoLoginAfterMounted();
-            store.vrcx.checkAutoBackupRestoreVrcRegistry();
         }
-
-        runCheckVRChatDebugLoggingFlow();
     });
 </script>

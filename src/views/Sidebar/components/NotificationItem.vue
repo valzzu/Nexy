@@ -67,19 +67,6 @@
                                 </button>
                             </TooltipWrapper>
 
-                            <TooltipWrapper
-                                v-if="notification.type === 'invite'"
-                                side="top"
-                                :content="t('view.notification.actions.decline_with_message')">
-                                <button
-                                    type="button"
-                                    class="inline-flex size-5 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
-                                    @click.stop="$emit('show-invite-response', notification)"
-                                    :ariaLabel="t('view.notification.actions.decline_with_message')">
-                                    <MessageCircle class="size-3" />
-                                </button>
-                            </TooltipWrapper>
-
                             <template v-if="notification.type === 'requestInvite'">
                                 <TooltipWrapper
                                     v-if="canInvite"
@@ -91,17 +78,6 @@
                                         @click.stop="notificationStore.acceptRequestInvite(notification)"
                                         :ariaLabel="t('view.notification.actions.invite')">
                                         <Check class="size-3" />
-                                    </button>
-                                </TooltipWrapper>
-                                <TooltipWrapper
-                                    side="top"
-                                    :content="t('view.notification.actions.decline_with_message')">
-                                    <button
-                                        type="button"
-                                        class="inline-flex size-5 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
-                                        @click.stop="$emit('show-invite-request-response', notification)"
-                                        :ariaLabel="t('view.notification.actions.decline_with_message')">
-                                        <MessageCircle class="size-3" />
                                     </button>
                                 </TooltipWrapper>
                             </template>
@@ -240,7 +216,6 @@
         Check,
         Link,
         Mail,
-        MessageCircle,
         Reply,
         Send,
         Tag,
@@ -273,8 +248,6 @@
         notification: { type: Object, required: true },
         isUnseen: { type: Boolean, default: false }
     });
-
-    defineEmits(['show-invite-response', 'show-invite-request-response']);
 
     const { t, te } = useI18n();
     const userStore = useUserStore();
@@ -325,7 +298,6 @@
         requestInvite: Send,
         inviteResponse: Send,
         requestInviteResponse: Send,
-        boop: MessageCircle,
         message: Mail
     };
 
@@ -365,7 +337,6 @@
             type !== 'requestInviteResponse' &&
             type !== 'inviteResponse' &&
             type !== 'message' &&
-            type !== 'boop' &&
             type !== 'groupChange' &&
             !type?.includes('group.') &&
             !type?.includes('moderation.') &&
@@ -396,8 +367,7 @@
             'inviteResponse',
             'requestInviteResponse',
             'friendRequest',
-            'ignoredFriendRequest',
-            'boop'
+            'ignoredFriendRequest'
         ].includes(type);
     });
 
@@ -447,7 +417,7 @@
             case 'bell-slash':
                 return BellOff;
             case 'reply':
-                return props.notification.type === 'boop' ? MessageCircle : Reply;
+                return Reply;
             default:
                 return Tag;
         }
@@ -456,10 +426,6 @@
     function handleResponse(response) {
         if (response.type === 'link') {
             openNotificationLink(response.data);
-            return;
-        }
-        if (response.icon === 'reply' && props.notification.type === 'boop') {
-            userStore.showSendBoopDialog(props.notification.senderUserId);
             return;
         }
         notificationStore.sendNotificationResponse(props.notification.id, props.notification.responses, response.type);

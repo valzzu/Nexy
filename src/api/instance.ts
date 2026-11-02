@@ -1,5 +1,5 @@
 import type { Instance, InstanceShortNameResponse, SentNotification } from 'vrchat';
-import type { InstanceCount, Json, VrcxUpdateInstanceRequest } from '../types/vrcx';
+import type { Json, VrcxUpdateInstanceRequest } from '../types/vrcx';
 import { toast } from 'vue-sonner';
 
 import { i18n } from '../plugins/i18n';
@@ -23,21 +23,6 @@ const instanceReq = {
         });
     },
 
-    createInstance(params: any): Promise<{ json: Json<Instance>; params: any }> {
-        const instanceStore = useInstanceStore();
-        return request('instances', {
-            method: 'POST',
-            params
-        }).then((json) => {
-            const args = {
-                json,
-                params,
-                ref: instanceStore.applyInstance(json)
-            };
-            return args;
-        });
-    },
-
     getInstanceShortName(instance: { worldId: string; instanceId: string; shortName?: string }): Promise<{
         json: Json<InstanceShortNameResponse>;
         instance: { worldId: string; instanceId: string };
@@ -55,20 +40,6 @@ const instanceReq = {
                 json,
                 instance,
                 params
-            };
-            return args;
-        });
-    },
-
-    getInstanceFromShortName(params: { shortName: string }): Promise<{ json: Json<Instance>; params }> {
-        const instanceStore = useInstanceStore();
-        return request(`instances/s/${params.shortName}`, {
-            method: 'GET'
-        }).then((json) => {
-            const args = {
-                json,
-                params,
-                ref: instanceStore.applyInstance(json)
             };
             return args;
         });
@@ -104,16 +75,6 @@ const instanceReq = {
             });
     },
 
-    getInstanceCount(): Promise<{ json: InstanceCount }> {
-        return request('instances/count', {
-            method: 'GET'
-        }).then((json) => {
-            return {
-                json
-            };
-        });
-    },
-
     updateInstance(params: VrcxUpdateInstanceRequest): Promise<{ json: Json<Instance>; params; ref: any }> {
         const instanceStore = useInstanceStore();
         const { location, ...body } = params;
@@ -125,27 +86,6 @@ const instanceReq = {
                 json,
                 params,
                 ref: instanceStore.applyInstance(json)
-            };
-        });
-    },
-
-    instanceAnnouncement(params: {
-        location: string;
-        title: string;
-        message: string;
-        imageId?: string;
-        imageVersion?: string;
-    }): Promise<{
-        json: any;
-        params: { location: string; title: string; message: string; imageId?: string; imageVersion?: string };
-    }> {
-        return request(`instances/${params.location}/announce`, {
-            method: 'POST',
-            params
-        }).then((json) => {
-            return {
-                json,
-                params
             };
         });
     }

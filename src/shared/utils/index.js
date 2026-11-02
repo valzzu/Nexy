@@ -1,5 +1,4 @@
 export * from './base/array';
-export * from './base/devtool';
 export * from './base/format';
 export { formatDateFilter } from '../../coordinators/dateCoordinator';
 export * from './base/string';
@@ -31,4 +30,3 @@ export * from './groupTransforms';
 export * from './instanceTransforms';
 export * from './cacheUtils';
 export * from './notificationTransforms';
-export * from './discordPresence';

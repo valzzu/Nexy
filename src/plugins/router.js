@@ -1,25 +1,18 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 
-import { NEXVR_HIDDEN_ROUTE_NAMES } from '../shared/constants/nexvr';
 import { watchState } from '../services/watchState';
 
-import FavoritesAvatar from './../views/Favorites/FavoritesAvatar.vue';
-import FavoritesFriend from './../views/Favorites/FavoritesFriend.vue';
-import FavoritesWorld from './../views/Favorites/FavoritesWorld.vue';
 import Feed from './../views/Feed/Feed.vue';
 import FriendList from './../views/FriendList/FriendList.vue';
 import FriendLog from './../views/FriendLog/FriendLog.vue';
 import FriendsLocations from './../views/FriendsLocations/FriendsLocations.vue';
 import Dashboard from './../views/Dashboard/Dashboard.vue';
-import Gallery from './../views/Tools/Gallery.vue';
 import GameLog from './../views/GameLog/GameLog.vue';
 import Login from './../views/Login/Login.vue';
 import MainLayout from '../views/Layout/MainLayout.vue';
 import Moderation from './../views/Moderation/Moderation.vue';
-import MyAvatars from './../views/MyAvatars/MyAvatars.vue';
 import Notification from './../views/Notifications/Notification.vue';
 import PlayerList from './../views/PlayerList/PlayerList.vue';
-import ScreenshotMetadata from './../views/Tools/ScreenshotMetadata.vue';
 import Search from './../views/Search/Search.vue';
 import Settings from './../views/Settings/Settings.vue';
 import Tools from './../views/Tools/Tools.vue';
@@ -54,21 +47,6 @@ const routes = [
                 meta: { navKey: 'dashboard' }
             },
             {
-                path: 'favorites/friends',
-                name: 'favorite-friends',
-                component: FavoritesFriend
-            },
-            {
-                path: 'favorites/worlds',
-                name: 'favorite-worlds',
-                component: FavoritesWorld
-            },
-            {
-                path: 'favorites/avatars',
-                name: 'favorite-avatars',
-                component: FavoritesAvatar
-            },
-            {
                 path: 'social/friend-log',
                 name: 'friend-log',
                 component: FriendLog
@@ -77,11 +55,6 @@ const routes = [
                 path: 'social/moderation',
                 name: 'moderation',
                 component: Moderation
-            },
-            {
-                path: 'my-avatars',
-                name: 'my-avatars',
-                component: MyAvatars
             },
             {
                 path: 'notification',
@@ -104,28 +77,11 @@ const routes = [
                 component: () => import('./../views/Charts/components/InstanceActivity.vue')
             },
             {
-                path: 'charts/mutual',
-                name: 'charts-mutual',
-                component: () => import('./../views/Charts/components/MutualFriends.vue')
-            },
-            {
                 path: 'charts/hot-worlds',
                 name: 'charts-hot-worlds',
                 component: () => import('./../views/Charts/components/HotWorlds.vue')
             },
             { path: 'tools', name: 'tools', component: Tools },
-            {
-                path: 'tools/gallery',
-                name: 'gallery',
-                component: Gallery,
-                meta: { navKeys: ['tool-gallery', 'tools'] }
-            },
-            {
-                path: 'tools/screenshot-metadata',
-                name: 'screenshot-metadata',
-                component: ScreenshotMetadata,
-                meta: { navKeys: ['tool-screenshot-metadata', 'tools'] }
-            },
             {
                 path: 'settings',
                 name: 'settings',
@@ -152,11 +108,6 @@ router.beforeEach((to) => {
     }
 
     if (to.name === 'login' && watchState.isLoggedIn) {
-        return { name: 'feed' };
-    }
-
-    // VRChat-only pages, e.g. one restored as the last open page
-    if (NEXVR_HIDDEN_ROUTE_NAMES.has(String(to.name))) {
         return { name: 'feed' };
     }
 

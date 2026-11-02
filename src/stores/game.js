@@ -8,12 +8,6 @@ export const useGameStore = defineStore('Game', () => {
         lastCrashedTime: null
     });
 
-    const VRChatUsedCacheSize = ref('');
-
-    const VRChatTotalCacheSize = ref(0);
-
-    const VRChatCacheSizeLoading = ref(false);
-
     const isGameRunning = ref(false);
 
     const isGameNoVR = ref(true);
@@ -82,35 +76,9 @@ export const useGameStore = defineStore('Game', () => {
         state.lastCrashedTime = value;
     }
 
-    /**
-     * Fetches VRChat cache size from AssetBundleManager.
-     */
-    async function getVRChatCacheSize() {
-        VRChatCacheSizeLoading.value = true;
-        const totalCacheSize = 30;
-        VRChatTotalCacheSize.value = totalCacheSize;
-        const usedCacheSize = await AssetBundleManager.GetCacheSize();
-        VRChatUsedCacheSize.value = (usedCacheSize / 1073741824).toFixed(2);
-        VRChatCacheSizeLoading.value = false;
-    }
-
-    /**
-     * @param {string} key VRChat registry key.
-     * @returns {Promise<unknown>} Registry key value.
-     */
-    async function getVRChatRegistryKey(key) {
-        if (LINUX) {
-            return AppApi.GetVRChatRegistryKeyString(key);
-        }
-        return AppApi.GetVRChatRegistryKey(key);
-    }
-
     return {
         state,
 
-        VRChatUsedCacheSize,
-        VRChatTotalCacheSize,
-        VRChatCacheSizeLoading,
         isGameRunning,
         isGameNoVR,
         isSteamVRRunning,
@@ -123,8 +91,6 @@ export const useGameStore = defineStore('Game', () => {
         setIsSteamVRRunning,
         setIsHmdAfk,
         setLastSession,
-        setLastCrashedTime,
-        getVRChatCacheSize,
-        getVRChatRegistryKey
+        setLastCrashedTime
     };
 });

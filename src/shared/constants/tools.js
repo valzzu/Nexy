@@ -1,65 +1,10 @@
-import { NEXVR_HIDDEN_TOOL_KEYS } from './nexvr';
-
-const allToolCategories = [
-    { key: 'image', labelKey: 'view.tools.pictures.header' },
+const toolCategories = [
     { key: 'shortcuts', labelKey: 'view.tools.shortcuts.header' },
-    { key: 'group', labelKey: 'view.tools.group.header' },
     { key: 'system', labelKey: 'view.tools.system_tools.header' },
-    { key: 'user', labelKey: 'view.tools.export.header' },
-    { key: 'other', labelKey: 'view.tools.other.header' }
+    { key: 'user', labelKey: 'view.tools.export.header' }
 ];
 
-const allToolDefinitions = [
-    {
-        key: 'screenshot-metadata',
-        category: 'image',
-        iconKey: 'camera',
-        navIcon: 'ri-camera-line',
-        titleKey: 'view.tools.pictures.screenshot',
-        descriptionKey: 'view.tools.pictures.screenshot_description',
-        navEligible: true,
-        action: { type: 'route', routeName: 'screenshot-metadata' }
-    },
-    {
-        key: 'gallery',
-        category: 'image',
-        iconKey: 'image',
-        navIcon: 'ri-image-line',
-        titleKey: 'view.tools.pictures.gallery',
-        descriptionKey: 'view.tools.pictures.gallery_description',
-        navEligible: true,
-        action: { type: 'route', routeName: 'gallery' }
-    },
-    {
-        key: 'vrc-photos',
-        category: 'shortcuts',
-        iconKey: 'folder-open',
-        navIcon: 'ri-folder-image-line',
-        titleKey: 'view.tools.pictures.pictures.vrc_photos',
-        descriptionKey: 'view.tools.pictures.pictures.vrc_photos_description',
-        navEligible: true,
-        action: {
-            type: 'app-api',
-            method: 'OpenVrcPhotosFolder',
-            successMessageKey: 'message.file.folder_opened',
-            errorMessageKey: 'message.file.folder_missing'
-        }
-    },
-    {
-        key: 'steam-screenshots',
-        category: 'shortcuts',
-        iconKey: 'folder-image',
-        navIcon: 'ri-folder-image-line',
-        titleKey: 'view.tools.pictures.pictures.steam_screenshots',
-        descriptionKey: 'view.tools.pictures.pictures.steam_screenshots_description',
-        navEligible: true,
-        action: {
-            type: 'app-api',
-            method: 'OpenVrcScreenshotsFolder',
-            successMessageKey: 'message.file.folder_opened',
-            errorMessageKey: 'message.file.folder_missing'
-        }
-    },
+const toolDefinitions = [
     {
         key: 'vrcx-data',
         category: 'shortcuts',
@@ -76,78 +21,6 @@ const allToolDefinitions = [
         }
     },
     {
-        key: 'vrchat-data',
-        category: 'shortcuts',
-        iconKey: 'folder-cog',
-        navIcon: 'ri-folder-settings-line',
-        titleKey: 'view.tools.shortcuts.vrchat_data',
-        descriptionKey: 'view.tools.shortcuts.vrchat_data_description',
-        navEligible: true,
-        action: {
-            type: 'app-api',
-            method: 'OpenVrcAppDataFolder',
-            successMessageKey: 'message.file.folder_opened',
-            errorMessageKey: 'message.file.folder_missing'
-        }
-    },
-    {
-        key: 'crash-dumps',
-        category: 'shortcuts',
-        iconKey: 'folder-x',
-        navIcon: 'ri-folder-warning-line',
-        titleKey: 'view.tools.shortcuts.crash_dumps',
-        descriptionKey: 'view.tools.shortcuts.crash_dumps_description',
-        navEligible: true,
-        action: {
-            type: 'app-api',
-            method: 'OpenCrashVrcCrashDumps',
-            successMessageKey: 'message.file.folder_opened',
-            errorMessageKey: 'message.file.folder_missing'
-        }
-    },
-    {
-        key: 'vrchat-config',
-        category: 'system',
-        iconKey: 'sliders-horizontal',
-        navIcon: 'ri-settings-3-line',
-        titleKey: 'view.tools.system_tools.vrchat_config',
-        descriptionKey: 'view.tools.system_tools.vrchat_config_description',
-        navEligible: true,
-        action: {
-            type: 'store-action',
-            target: 'advancedSettings',
-            method: 'showVRChatConfig'
-        }
-    },
-    {
-        key: 'launch-options',
-        category: 'system',
-        iconKey: 'terminal',
-        navIcon: 'ri-terminal-box-line',
-        titleKey: 'view.settings.advanced.advanced.launch_options',
-        descriptionKey: 'view.tools.system_tools.launch_options_description',
-        navEligible: true,
-        action: {
-            type: 'store-action',
-            target: 'launch',
-            method: 'showLaunchOptions'
-        }
-    },
-    {
-        key: 'registry-backup',
-        category: 'system',
-        iconKey: 'archive',
-        navIcon: 'ri-archive-stack-line',
-        titleKey: 'view.settings.advanced.advanced.vrc_registry_backup',
-        descriptionKey: 'view.tools.system_tools.registry_backup_description',
-        navEligible: true,
-        action: {
-            type: 'store-action',
-            target: 'vrcx',
-            method: 'showRegistryBackupDialog'
-        }
-    },
-    {
         key: 'auto-change-status',
         category: 'system',
         iconKey: 'bot',
@@ -156,36 +29,6 @@ const allToolDefinitions = [
         descriptionKey: 'view.settings.general.automation.auto_state_change_tooltip',
         navEligible: true,
         action: { type: 'dialog', dialogKey: 'auto-change-status' }
-    },
-    {
-        key: 'group-calendar',
-        category: 'group',
-        iconKey: 'calendar',
-        navIcon: 'ri-calendar-event-line',
-        titleKey: 'view.tools.group.calendar',
-        descriptionKey: 'view.tools.group.calendar_description',
-        navEligible: true,
-        action: { type: 'dialog', dialogKey: 'group-calendar' }
-    },
-    {
-        key: 'blocked-groups',
-        category: 'group',
-        iconKey: 'ban',
-        navIcon: 'ri-forbid-line',
-        titleKey: 'view.tools.group.blocked_groups',
-        descriptionKey: 'view.tools.group.blocked_groups_description',
-        navEligible: true,
-        action: { type: 'dialog', dialogKey: 'blocked-groups' }
-    },
-    {
-        key: 'group-invites',
-        category: 'group',
-        iconKey: 'mail',
-        navIcon: 'ri-mail-line',
-        titleKey: 'view.tools.group.group_invites',
-        descriptionKey: 'view.tools.group.group_invites_description',
-        navEligible: true,
-        action: { type: 'dialog', dialogKey: 'group-invites' }
     },
     {
         key: 'discord-names',
@@ -198,16 +41,6 @@ const allToolDefinitions = [
         action: { type: 'dialog', dialogKey: 'export-discord-names' }
     },
     {
-        key: 'export-notes',
-        category: 'user',
-        iconKey: 'file-text',
-        navIcon: 'ri-file-list-3-line',
-        titleKey: 'view.tools.export.export_notes',
-        descriptionKey: 'view.tools.export.export_notes_description',
-        navEligible: true,
-        action: { type: 'dialog', dialogKey: 'note-export' }
-    },
-    {
         key: 'export-friend-list',
         category: 'user',
         iconKey: 'users',
@@ -216,65 +49,8 @@ const allToolDefinitions = [
         descriptionKey: 'view.tools.user.export_friend_list_description',
         navEligible: true,
         action: { type: 'dialog', dialogKey: 'export-friends-list' }
-    },
-    {
-        key: 'export-own-avatars',
-        category: 'user',
-        iconKey: 'download',
-        navIcon: 'ri-file-list-3-line',
-        titleKey: 'view.tools.export.export_own_avatars',
-        descriptionKey: 'view.tools.user.export_own_avatars_description',
-        navEligible: true,
-        action: { type: 'dialog', dialogKey: 'export-avatars-list' }
-    },
-    {
-        key: 'edit-invite-message',
-        category: 'other',
-        iconKey: 'pencil',
-        navIcon: 'ri-quill-pen-line',
-        titleKey: 'view.tools.other.edit_invite_message',
-        descriptionKey: 'view.tools.other.edit_invite_message_description',
-        navEligible: true,
-        action: { type: 'dialog', dialogKey: 'edit-invite-messages' }
-    },
-    {
-        key: 'moderation-reports',
-        category: 'other',
-        iconKey: 'flag',
-        navIcon: 'ri-flag-line',
-        titleKey: 'view.tools.other.moderation_reports',
-        descriptionKey: 'view.tools.other.moderation_reports_description',
-        navEligible: true,
-        action: { type: 'dialog', dialogKey: 'moderation-reports' }
-    },
-    {
-        key: 'purchase-history',
-        category: 'other',
-        iconKey: 'shopping-bag',
-        navIcon: 'ri-shopping-bag-line',
-        titleKey: 'view.tools.other.purchase_history',
-        descriptionKey: 'view.tools.other.purchase_history_description',
-        navEligible: true,
-        action: { type: 'dialog', dialogKey: 'purchase-history' }
-    },
-    {
-        key: 'info-push',
-        category: 'other',
-        iconKey: 'megaphone',
-        navIcon: 'ri-megaphone-line',
-        titleKey: 'view.tools.other.info_push',
-        descriptionKey: 'view.tools.other.info_push_description',
-        navEligible: true,
-        action: { type: 'dialog', dialogKey: 'info-push' }
     }
 ];
-
-const toolDefinitions = allToolDefinitions.filter((tool) => !NEXVR_HIDDEN_TOOL_KEYS.has(tool.key));
-
-// categories left empty by the NexVR filter would show as bare headers
-const toolCategories = allToolCategories.filter((category) =>
-    toolDefinitions.some((tool) => tool.category === category.key)
-);
 
 const toolDefinitionMap = new Map(toolDefinitions.map((tool) => [tool.key, tool]));
 

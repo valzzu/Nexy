@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/vue-query';
 
-import { avatarRequest, groupRequest, userRequest, worldRequest } from '../api';
+import { groupRequest, userRequest, worldRequest } from '../api';
 import { entityQueryPolicies, toQueryOptions } from './policies';
 import { queryKeys } from './keys';
 
@@ -15,20 +15,6 @@ export function useUserQuery(userId, options = {}) {
         queryFn: () => userRequest.getUser({ userId }),
         enabled: Boolean(userId),
         ...toQueryOptions(entityQueryPolicies.user)
-    });
-}
-
-/**
- * @param avatarId
- * @param options
- */
-export function useAvatarQuery(avatarId, options = {}) {
-    return useQuery({
-        ...options,
-        queryKey: queryKeys.avatar(avatarId),
-        queryFn: () => avatarRequest.getAvatar({ avatarId }),
-        enabled: Boolean(avatarId),
-        ...toQueryOptions(entityQueryPolicies.avatar)
     });
 }
 

@@ -36,14 +36,6 @@
                                         </FieldContent>
                                     </Field>
                                     <Field orientation="horizontal" class="friend-view__settings-row">
-                                        <FieldLabel class="friend-view__settings-label">{{
-                                            t('view.settings.appearance.appearance.show_cosmetics')
-                                        }}</FieldLabel>
-                                        <FieldContent class="items-end">
-                                            <Switch v-model="showCosmetics" />
-                                        </FieldContent>
-                                    </Field>
-                                    <Field orientation="horizontal" class="friend-view__settings-row">
                                         <FieldLabel class="friend-view__settings-label">
                                             {{ t('view.friends_locations.scale') }}
                                         </FieldLabel>
@@ -133,7 +125,6 @@
                                     :friend="card.friend"
                                     :card-scale="cardScale"
                                     :card-spacing="cardSpacing"
-                                    :show-cosmetics="showCosmetics"
                                     :display-instance-info="card.displayInstanceInfo" />
                             </div>
                         </template>
@@ -190,7 +181,7 @@
         storeToRefs(appearanceSettingsStore);
 
     const favoriteStore = useFavoriteStore();
-    const { favoriteFriendGroups, groupedByGroupKeyFavoriteFriends, localFriendFavorites } = storeToRefs(favoriteStore);
+    const { localFriendFavorites } = storeToRefs(favoriteStore);
 
     const locationStore = useLocationStore();
     const { lastLocation } = storeToRefs(locationStore);
@@ -258,21 +249,12 @@
     });
 
     const showSameInstanceBase = ref(false);
-    const showCosmeticsBase = ref(true);
 
     const showSameInstance = computed({
         get: () => showSameInstanceBase.value,
         set: (value) => {
             showSameInstanceBase.value = value;
             configRepository.setBool('VRCX_FriendLocationShowSameInstance', value);
-        }
-    });
-
-    const showCosmetics = computed({
-        get: () => showCosmeticsBase.value,
-        set: (value) => {
-            showCosmeticsBase.value = value;
-            configRepository.setBool('VRCX_FriendLocationShowCosmetics', value);
         }
     });
 
@@ -385,7 +367,6 @@
         if (!hasFilter) return allFavoriteFriendIds.value;
 
         const ids = new Set();
-        const remoteFriendsByGroup = groupedByGroupKeyFavoriteFriends.value;
         for (const key of selectedGroups) {
             if (key.startsWith('local:')) {
                 const groupName = key.slice(6);
@@ -393,8 +374,6 @@
                 if (userIds) {
                     for (const id of userIds) ids.add(id);
                 }
-            } else if (remoteFriendsByGroup[key]) {
-                for (const f of remoteFriendsByGroup[key]) ids.add(f.id);
             }
         }
         return ids;
@@ -423,19 +402,10 @@
     });
 
     const vipFriendsDivideByGroup = computed(() => {
-        const remoteFriendsByGroup = groupedByGroupKeyFavoriteFriends.value;
         const selectedGroups = sidebarFavoriteGroups.value;
         const hasFilter = selectedGroups.length > 0;
 
         const groups = [];
-        for (const key in remoteFriendsByGroup) {
-            if (Object.hasOwn(remoteFriendsByGroup, key)) {
-                if (hasFilter && !selectedGroups.includes(key)) continue;
-                const groupName = favoriteFriendGroups.value.find((g) => g.key === key)?.displayName || '';
-                const memberIds = new Set(remoteFriendsByGroup[key].map((f) => f.id));
-                groups.push({ key, groupName, memberIds });
-            }
-        }
         for (const groupName in localFriendFavorites.value) {
             const selectedKey = `local:${groupName}`;
             if (hasFilter && !selectedGroups.includes(selectedKey)) continue;
@@ -912,11 +882,10 @@
 
     async function loadInitialSettings() {
         try {
-            const [storedScale, storedSpacing, storedShowSameInstance, storedShowCosmetics] = await Promise.all([
+            const [storedScale, storedSpacing, storedShowSameInstance] = await Promise.all([
                 configRepository.getString('VRCX_FriendLocationCardScale', '1'),
                 configRepository.getString('VRCX_FriendLocationCardSpacing', '1'),
-                configRepository.getBool('VRCX_FriendLocationShowSameInstance', null),
-                configRepository.getBool('VRCX_FriendLocationShowCosmetics', true)
+                configRepository.getBool('VRCX_FriendLocationShowSameInstance', null)
             ]);
 
             const parsedScale = parseFloat(storedScale);
@@ -932,7 +901,6 @@
             if (storedShowSameInstance !== null && storedShowSameInstance !== undefined) {
                 showSameInstanceBase.value = Boolean(storedShowSameInstance);
             }
-            showCosmeticsBase.value = Boolean(storedShowCosmetics);
         } catch (error) {
             console.error('Failed to load Friend Location preferences', error);
         } finally {

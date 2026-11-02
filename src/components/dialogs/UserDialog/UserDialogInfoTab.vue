@@ -83,7 +83,6 @@
                                             <User class="size-4 text-muted-foreground" />
                                         </AvatarFallback>
                                     </Avatar>
-                                    <IconFrame :icon-frame="userDialog.$location.user.iconFrame" />
                                 </div>
                                 <div class="flex-1 overflow-hidden">
                                     <span
@@ -109,7 +108,6 @@
                                         <User class="size-4 text-muted-foreground" />
                                     </AvatarFallback>
                                 </Avatar>
-                                <IconFrame :icon-frame="user.iconFrame" />
                             </div>
                             <div class="flex-1 overflow-hidden">
                                 <span
@@ -179,28 +177,6 @@
                                 loading="lazy" />
                         </TooltipWrapper>
                     </div>
-                </div>
-
-                <div
-                    v-if="!hideUserNotes"
-                    class="rounded-xl bg-(--profile-card) p-3 cursor-pointer"
-                    @click="isEditNoteAndMemoDialogVisible = true">
-                    <div class="flex items-center justify-between mb-2 pb-2 border-b border-muted-foreground/20">
-                        <span
-                            class="text-[10px] font-bold uppercase tracking-wide"
-                            :style="{ color: userDialog.theme.subtextColor }">
-                            {{ t('dialog.user.info.note') }}
-                        </span>
-                        <Button class="h-5 w-5" size="icon-sm" variant="ghost">
-                            <Pencil class="h-3 w-3" :style="{ color: userDialog.theme.iconColor }" />
-                        </Button>
-                    </div>
-                    <pre
-                        v-if="userDialog.note"
-                        class="text-xs font-[inherit]"
-                        style="white-space: pre-wrap; max-height: 210px; overflow-y: auto"
-                        >{{ userDialog.note }}</pre>
-                    <pre class="text-xs font-[inherit] text-muted-foreground" v-else>—</pre>
                 </div>
 
                 <div
@@ -352,43 +328,6 @@
                         {{ t('dialog.user.info.header') }}
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <TooltipWrapper v-if="showVrchatOnlyFields" side="right">
-                            <template #content>
-                                <span
-                                    >{{ t('dialog.user.info.last_login') }}
-                                    {{ formatDateFilter(userDialog.ref.last_login, 'long') }}</span
-                                >
-                                <br />
-                                <span
-                                    >{{ t('dialog.user.info.last_activity') }}
-                                    {{ formatDateFilter(userDialog.ref.last_activity, 'long') }}</span
-                                >
-                            </template>
-                            <div class="flex justify-between items-start gap-2 text-xs">
-                                <span class="text-muted-foreground shrink-0">{{
-                                    t('dialog.user.info.last_activity')
-                                }}</span>
-                                <span class="text-right text-muted-foreground">
-                                    {{ timeAgo(userDialog.ref.last_activity) }}
-                                </span>
-                            </div>
-                        </TooltipWrapper>
-
-                        <TooltipWrapper
-                            v-if="showVrchatOnlyFields"
-                            side="right"
-                            :content="formatDateFilter(userDialog.ref.date_joined, 'date')"
-                            :disabled="!userDialog.ref.date_joined">
-                            <div class="flex justify-between items-start gap-2 text-xs">
-                                <span class="text-muted-foreground shrink-0">{{
-                                    t('dialog.user.info.date_joined')
-                                }}</span>
-                                <span
-                                    class="text-right text-muted-foreground"
-                                    v-text="timeAgo(userDialog.ref.date_joined)"></span>
-                            </div>
-                        </TooltipWrapper>
-
                         <template v-if="currentUser.id === userDialog.id">
                             <TooltipWrapper side="right">
                                 <template #content>
@@ -407,17 +346,6 @@
                             </TooltipWrapper>
                         </template>
 
-                        <div
-                            v-if="showVrchatOnlyFields && currentUser.id !== userDialog.id"
-                            class="flex justify-between items-center text-xs">
-                            <span class="text-muted-foreground">{{ t('dialog.user.info.avatar_cloning') }}</span>
-                            <span class="text-muted-foreground">{{
-                                userDialog.ref.allowAvatarCopying
-                                    ? t('dialog.user.info.avatar_cloning_allow')
-                                    : t('dialog.user.info.avatar_cloning_deny')
-                            }}</span>
-                        </div>
-
                         <div class="flex justify-between items-center gap-2 text-xs">
                             <span class="text-muted-foreground">{{ t('dialog.user.info.id') }}</span>
                             <Button
@@ -431,28 +359,6 @@
                         </div>
                     </div>
                 </div>
-
-                <div
-                    v-if="userDialog.ref.id === currentUser.id && currentUser.homeLocation"
-                    class="rounded-xl bg-(--profile-card) p-3">
-                    <div
-                        class="text-[10px] font-bold uppercase tracking-wide mb-2 pb-2 border-b border-muted-foreground/20"
-                        :style="{ color: userDialog.theme.subtextColor }">
-                        {{ t('dialog.user.info.home_location') }}
-                    </div>
-                    <div
-                        class="flex items-center justify-between gap-2 text-xs cursor-pointer"
-                        @click="showWorldDialog(currentUser.homeLocation)">
-                        <span class="truncate" v-text="userDialog.$homeLocationName"></span>
-                        <Button
-                            class="rounded-full h-5 w-5 flex-none"
-                            size="icon-sm"
-                            variant="ghost"
-                            @click.stop="resetHome()">
-                            <Trash2 class="h-3 w-3" :style="{ color: userDialog.theme.iconColor }" />
-                        </Button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -460,18 +366,13 @@
 </template>
 
 <script setup>
-    import { Copy, Info, Languages, Pencil, Trash2, User } from 'lucide-vue-next';
+    import { Copy, Info, Languages, Pencil, User } from 'lucide-vue-next';
     import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-    import IconFrame from '@/components/IconFrame.vue';
     import { ref, watch } from 'vue';
 
-    // Last activity, join date and avatar cloning are VRChat account data
-    // that NexVR doesn't expose
-    const showVrchatOnlyFields = false;
     import { Button } from '@/components/ui/button';
     import { Spinner } from '@/components/ui/spinner';
     import { storeToRefs } from 'pinia';
-    import { toast } from 'vue-sonner';
     import { useI18n } from 'vue-i18n';
 
     import {
@@ -493,12 +394,11 @@
         useAppearanceSettingsStore,
         useInstanceStore,
         useLocationStore,
-        useModalStore,
         useUserStore,
         useGalleryStore
     } from '../../../stores';
     import { showWorldDialog } from '../../../coordinators/worldCoordinator';
-    import { queryRequest, userRequest } from '../../../api';
+    import { queryRequest } from '../../../api';
 
     import InstanceActionBar from '../../InstanceActionBar.vue';
     import { showUserDialog } from '../../../coordinators/userCoordinator';
@@ -507,10 +407,9 @@
 
     const { t } = useI18n();
 
-    const modalStore = useModalStore();
     const instanceStore = useInstanceStore();
 
-    const { hideUserNotes, hideUserMemos } = storeToRefs(useAppearanceSettingsStore());
+    const { hideUserMemos } = storeToRefs(useAppearanceSettingsStore());
     const { bioLanguage, translationApi, translationApiType } = storeToRefs(useAdvancedSettingsStore());
     const { translateText } = useAdvancedSettingsStore();
     const { userDialog, currentUser, currentUserCredits } = storeToRefs(useUserStore());
@@ -594,28 +493,6 @@
      */
     function showPreviousInstancesListDialog(userRef) {
         instanceStore.showPreviousInstancesListDialog('user', userRef);
-    }
-
-    function resetHome() {
-        modalStore
-            .confirm({
-                description: t('confirm.command_question', {
-                    command: t('dialog.user.actions.reset_home')
-                }),
-                title: t('confirm.title')
-            })
-            .then(({ ok }) => {
-                if (!ok) return;
-                userRequest
-                    .saveCurrentUser({
-                        homeLocation: ''
-                    })
-                    .then((args) => {
-                        toast.success(t('message.user.home_reset'));
-                        return args;
-                    });
-            })
-            .catch(() => {});
     }
 
     function getVRChatCredits() {

@@ -2,7 +2,6 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { useFriendStore } from '../friend';
 import { useModalStore } from '../modal';
 import { useVRCXUpdaterStore } from '../vrcxUpdater';
 import { useVrcxStore } from '../vrcx';
@@ -14,7 +13,6 @@ import * as workerTimers from 'worker-timers';
 export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
     const vrcxStore = useVrcxStore();
     const VRCXUpdaterStore = useVRCXUpdaterStore();
-    const friendStore = useFriendStore();
     const modalStore = useModalStore();
 
     const { t } = useI18n();
@@ -23,9 +21,6 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
     const isStartAsMinimizedState = ref(false);
     const disableGpuAcceleration = ref(false);
     const isCloseToTray = ref(false);
-    const localFavoriteFriendsGroups = ref([]);
-    const udonExceptionLogging = ref(false);
-    const logResourceLoad = ref(false);
     const autoLoginDelayEnabled = ref(false);
     const autoLoginDelaySeconds = ref(0);
     const autoStateChangeEnabled = ref(false);
@@ -52,9 +47,6 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
             isCloseToTrayConfig,
             isCloseToTrayConfigBoolConfig,
             disableGpuAccelerationStrConfig,
-            localFavoriteFriendsGroupsStrConfig,
-            udonExceptionLoggingConfig,
-            logResourceLoadConfig,
             autoLoginDelayEnabledConfig,
             autoLoginDelaySecondsConfig,
             autoStateChangeEnabledConfig,
@@ -79,9 +71,6 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
             VRCXStorage.Get('VRCX_CloseToTray'),
             configRepository.getBool('VRCX_CloseToTray'),
             VRCXStorage.Get('VRCX_DisableGpuAcceleration'),
-            configRepository.getString('VRCX_localFavoriteFriendsGroups', '[]'),
-            configRepository.getBool('VRCX_udonExceptionLogging', false),
-            configRepository.getBool('VRCX_logResourceLoad', false),
             configRepository.getBool('VRCX_autoLoginDelayEnabled', false),
             configRepository.getInt('VRCX_autoLoginDelaySeconds', 0),
             configRepository.getBool('VRCX_autoStateChangeEnabled', false),
@@ -115,9 +104,6 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
         }
 
         disableGpuAcceleration.value = disableGpuAccelerationStrConfig === 'true';
-        localFavoriteFriendsGroups.value = JSON.parse(localFavoriteFriendsGroupsStrConfig);
-        udonExceptionLogging.value = udonExceptionLoggingConfig;
-        logResourceLoad.value = logResourceLoadConfig;
         autoLoginDelayEnabled.value = autoLoginDelayEnabledConfig;
         autoLoginDelaySeconds.value = autoLoginDelaySecondsConfig;
         autoStateChangeEnabled.value = autoStateChangeEnabledConfig;
@@ -156,22 +142,6 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
     function setDisableGpuAcceleration() {
         disableGpuAcceleration.value = !disableGpuAcceleration.value;
         VRCXStorage.Set('VRCX_DisableGpuAcceleration', disableGpuAcceleration.value.toString());
-    }
-    /**
-     * @param {string[]} value
-     */
-    function setLocalFavoriteFriendsGroups(value) {
-        localFavoriteFriendsGroups.value = value;
-        configRepository.setString('VRCX_localFavoriteFriendsGroups', JSON.stringify(value));
-        friendStore.updateLocalFavoriteFriends();
-    }
-    function setUdonExceptionLogging() {
-        udonExceptionLogging.value = !udonExceptionLogging.value;
-        configRepository.setBool('VRCX_udonExceptionLogging', udonExceptionLogging.value);
-    }
-    function setLogResourceLoad() {
-        logResourceLoad.value = !logResourceLoad.value;
-        configRepository.setBool('VRCX_logResourceLoad', logResourceLoad.value);
     }
     function setAutoLoginDelayEnabled() {
         autoLoginDelayEnabled.value = !autoLoginDelayEnabled.value;
@@ -344,9 +314,6 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
         isStartAsMinimizedState,
         isCloseToTray,
         disableGpuAcceleration,
-        localFavoriteFriendsGroups,
-        udonExceptionLogging,
-        logResourceLoad,
         autoLoginDelayEnabled,
         autoLoginDelaySeconds,
         autoStateChangeEnabled,
@@ -370,9 +337,6 @@ export const useGeneralSettingsStore = defineStore('GeneralSettings', () => {
         setIsStartAsMinimizedState,
         setIsCloseToTray,
         setDisableGpuAcceleration,
-        setLocalFavoriteFriendsGroups,
-        setUdonExceptionLogging,
-        setLogResourceLoad,
         setAutoLoginDelayEnabled,
         promptAutoLoginDelaySeconds,
         setAutoStateChangeEnabled,

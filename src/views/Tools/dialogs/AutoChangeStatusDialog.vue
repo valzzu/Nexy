@@ -51,16 +51,7 @@
                                     " />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectGroup>
-                                    <SelectItem
-                                        v-for="group in favoriteFriendGroups"
-                                        :key="group.key"
-                                        :value="group.key">
-                                        {{ group.displayName }}
-                                    </SelectItem>
-                                </SelectGroup>
                                 <template v-if="localFriendFavoriteGroups.length">
-                                    <SelectSeparator />
                                     <SelectGroup>
                                         <SelectItem
                                             v-for="group in localFriendFavoriteGroups"
@@ -234,16 +225,7 @@
                                     " />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectGroup>
-                                    <SelectItem
-                                        v-for="group in favoriteFriendGroups"
-                                        :key="group.key"
-                                        :value="group.key">
-                                        {{ group.displayName }}
-                                    </SelectItem>
-                                </SelectGroup>
                                 <template v-if="localFriendFavoriteGroups.length">
-                                    <SelectSeparator />
                                     <SelectGroup>
                                         <SelectItem
                                             v-for="group in localFriendFavoriteGroups"
@@ -295,15 +277,7 @@
 </template>
 
 <script setup>
-    import {
-        Select,
-        SelectContent,
-        SelectGroup,
-        SelectItem,
-        SelectSeparator,
-        SelectTrigger,
-        SelectValue
-    } from '@/components/ui/select';
+    import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
     import { Field, FieldContent, FieldGroup, FieldLabel, FieldSeparator } from '@/components/ui/field';
     import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
     import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -345,7 +319,7 @@
     } = storeToRefs(generalSettingsStore);
 
     const favoriteStore = useFavoriteStore();
-    const { favoriteFriendGroups, localFriendFavoriteGroups } = storeToRefs(favoriteStore);
+    const { localFriendFavoriteGroups } = storeToRefs(favoriteStore);
 
     const {
         setAutoStateChangeEnabled,

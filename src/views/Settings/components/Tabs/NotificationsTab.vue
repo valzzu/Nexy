@@ -19,52 +19,6 @@
             </SettingsItem>
         </SettingsGroup>
 
-        <SettingsGroup
-            v-if="showVrchatOnlySettings"
-            :title="t('view.settings.notifications.notifications.inventory_notifications.header')">
-            <SettingsItem
-                :label="
-                    t(
-                        'view.settings.notifications.notifications.inventory_notifications.inventory_bundle_notifications'
-                    )
-                "
-                :description="
-                    t(
-                        'view.settings.notifications.notifications.inventory_notifications.inventory_bundle_notifications_description'
-                    )
-                "
-                toggle>
-                <Switch
-                    :model-value="inventoryBundleNotifications"
-                    :ariaLabel="
-                        t(
-                            'view.settings.notifications.notifications.inventory_notifications.inventory_bundle_notifications'
-                        )
-                    "
-                    @update:modelValue="setInventoryBundleNotifications" />
-            </SettingsItem>
-
-            <SettingsItem
-                :label="
-                    t('view.settings.notifications.notifications.inventory_notifications.free_store_item_notifications')
-                "
-                :description="
-                    t(
-                        'view.settings.notifications.notifications.inventory_notifications.free_store_item_notifications_description'
-                    )
-                "
-                toggle>
-                <Switch
-                    :model-value="freeStoreItemNotifications"
-                    :ariaLabel="
-                        t(
-                            'view.settings.notifications.notifications.inventory_notifications.free_store_item_notifications'
-                        )
-                    "
-                    @update:modelValue="setFreeStoreItemNotifications" />
-            </SettingsItem>
-        </SettingsGroup>
-
         <SettingsGroup :title="t('view.settings.notifications.notifications.desktop_notifications.header')">
             <SettingsItem :label="t('view.settings.notifications.notifications.desktop_notifications.when_to_display')">
                 <Select :model-value="desktopToast" @update:model-value="setDesktopToast">
@@ -211,9 +165,6 @@
 
     const { t } = useI18n();
 
-    // Inventory and store notifications come from VRChat
-    const showVrchatOnlySettings = false;
-
     const notificationsSettingsStore = useNotificationsSettingsStore();
 
     const {
@@ -221,8 +172,6 @@
         afkDesktopToast,
         notificationTTS,
         notificationTTSNickName,
-        inventoryBundleNotifications,
-        freeStoreItemNotifications,
         isTestTTSVisible,
         notificationTTSTest,
         TTSvoices
@@ -232,8 +181,6 @@
         setDesktopToast,
         setAfkDesktopToast,
         setNotificationTTSNickName,
-        setInventoryBundleNotifications,
-        setFreeStoreItemNotifications,
         getTTSVoiceName,
         changeTTSVoice,
         saveNotificationTTS,

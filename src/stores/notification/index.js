@@ -15,19 +15,10 @@ import {
     parseLocation,
     parseNotificationDetails,
     removeFromArray,
-    replaceBioSymbols,
     sanitizeNotificationJson
 } from '../../shared/utils';
 import { getUserMemo } from '../../coordinators/memoCoordinator';
-import {
-    friendRequest,
-    instanceRequest,
-    inventoryRequest,
-    marketplaceRequest,
-    notificationRequest,
-    queryRequest
-} from '../../api';
-import { VRCHAT_STORE_IDS } from '../../shared/constants';
+import { friendRequest, instanceRequest, notificationRequest, queryRequest } from '../../api';
 import {
     getNotificationMessage,
     getUserIdFromNoty as getUserIdFromNotyBase,
@@ -96,21 +87,6 @@ export const useNotificationStore = defineStore('Notification', () => {
     const unseenNotifications = ref([]);
     const isNotificationsLoading = ref(false);
     const isNotificationCenterOpen = ref(false);
-    const inventoryBundleDialog = ref({
-        visible: false,
-        bundles: []
-    });
-    const shownBundleIds = new Set();
-    // Thanks for this buggy unredeemable bundle...
-    const ignoredBundleTemplateIds = new Set([
-        'invt_08e50f24-8807-4ec2-a0f9-9e008371280b' // October Open Beta Content Drop
-    ]);
-    const freeStoreItemDialog = ref({
-        visible: false,
-        listings: []
-    });
-    const shownFreeListingIds = new Set();
-
     const friendNotifications = computed(() =>
         notificationTable.value.data.filter((n) => getNotificationCategory(n.type) === 'friend')
     );
@@ -151,35 +127,11 @@ export const useNotificationStore = defineStore('Notification', () => {
         (isLoggedIn) => {
             isNotificationsLoading.value = false;
             notificationTable.value.data = [];
-            inventoryBundleDialog.value.visible = false;
-            freeStoreItemDialog.value.visible = false;
             if (isLoggedIn) {
                 initNotifications();
             }
         },
         { flush: 'sync' }
-    );
-
-    watch(
-        () => notificationsSettingsStore.inventoryBundleNotifications,
-        (enabled) => {
-            if (!enabled) {
-                inventoryBundleDialog.value.visible = false;
-            } else if (watchState.isLoggedIn) {
-                checkInventoryBundles();
-            }
-        }
-    );
-
-    watch(
-        () => notificationsSettingsStore.freeStoreItemNotifications,
-        (enabled) => {
-            if (!enabled) {
-                freeStoreItemDialog.value.visible = false;
-            } else if (watchState.isLoggedIn) {
-                checkFreeStoreItems();
-            }
-        }
     );
 
     async function init() {
@@ -300,7 +252,6 @@ export const useNotificationStore = defineStore('Notification', () => {
         }
         if (
             generalSettingsStore.autoAcceptInviteRequests === 'All Favorites' &&
-            !favoriteStore.state.favoriteFriends_.some((x) => x.id === ref.senderUserId) &&
             !favoriteStore.isInAnyLocalFriendGroup(ref.senderUserId)
         ) {
             return;
@@ -316,11 +267,6 @@ export const useNotificationStore = defineStore('Notification', () => {
                         const localGroup = groupKey.slice(6);
                         const localFavs = favoriteStore.localFriendFavorites[localGroup];
                         if (localFavs && localFavs.includes(ref.senderUserId)) {
-                            found = true;
-                            break;
-                        }
-                    } else {
-                        if (favoriteStore.cachedFavoritesByObjectId.get(ref.senderUserId)?.$groupKey === groupKey) {
                             found = true;
                             break;
                         }
@@ -1098,131 +1044,6 @@ export const useNotificationStore = defineStore('Notification', () => {
         refreshNotifications();
     }
 
-    async function checkInventoryBundles() {
-        if (!notificationsSettingsStore.inventoryBundleNotifications) {
-            return;
-        }
-        let bundles;
-        try {
-            const args = await inventoryRequest.getInventoryItems({
-                n: 100,
-                offset: 0,
-                types: 'bundle',
-                order: 'newest'
-            });
-            bundles = args.json.data;
-        } catch (err) {
-            console.error('Failed to check inventory bundles:', err);
-            return;
-        }
-        const newBundles = bundles.filter(
-            (item) => !shownBundleIds.has(item.id) && !ignoredBundleTemplateIds.has(item.templateId)
-        );
-        if (newBundles.length === 0) {
-            return;
-        }
-        for (const item of newBundles) {
-            shownBundleIds.add(item.id);
-        }
-        const dialog = inventoryBundleDialog.value;
-        if (dialog.visible) {
-            dialog.bundles.push(...newBundles);
-        } else {
-            dialog.bundles = newBundles;
-        }
-        dialog.visible = true;
-    }
-
-    function getEffectiveListingPrice(listing) {
-        if (userStore.isLocalUserVrcPlusSupporter && listing.vrcPlusDiscountPrice != null) {
-            return listing.vrcPlusDiscountPrice;
-        }
-        return listing.priceTokens;
-    }
-
-    function isListingOwned(listing) {
-        if (userStore.ownedListingIds.has(listing.id)) {
-            return true;
-        }
-        const productIds = listing.productIds ?? [];
-        return productIds.length > 0 && productIds.every((id) => userStore.ownedProductIds.has(id));
-    }
-
-    function isListingInBundle(listing, listings) {
-        const productIds = listing.productIds ?? [];
-        if (productIds.length === 0) {
-            return false;
-        }
-        for (const other of listings.values()) {
-            const bundleProductIds = other.productIds ?? [];
-            if (
-                other.id !== listing.id &&
-                bundleProductIds.length > productIds.length &&
-                productIds.every((id) => bundleProductIds.includes(id))
-            ) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    async function checkFreeStoreItems() {
-        if (!notificationsSettingsStore.freeStoreItemNotifications) {
-            return;
-        }
-        let shelves;
-        try {
-            const [results] = await Promise.all([
-                Promise.all(
-                    VRCHAT_STORE_IDS.map((storeId) =>
-                        marketplaceRequest.getStoreShelves({
-                            storeId,
-                            fetch: 'public',
-                            hydrateListings: true
-                        })
-                    )
-                ),
-                userStore.getAllProductPurchases()
-            ]);
-            shelves = results.flatMap((args) => args.json ?? []);
-        } catch (err) {
-            console.error('Failed to check free store items:', err);
-            return;
-        }
-        const freeListings = new Map();
-        for (const shelf of shelves) {
-            for (const listing of shelf.listings ?? []) {
-                if (
-                    listing.active &&
-                    !getEffectiveListingPrice(listing) &&
-                    !isListingOwned(listing) &&
-                    !shownFreeListingIds.has(listing.id)
-                ) {
-                    freeListings.set(listing.id, {
-                        ...listing,
-                        displayName: replaceBioSymbols(listing.displayName)
-                    });
-                }
-            }
-        }
-        for (const listing of freeListings.values()) {
-            shownFreeListingIds.add(listing.id);
-        }
-        const newListings = Array.from(freeListings.values()).filter(
-            (listing) => !isListingInBundle(listing, freeListings)
-        );
-        if (newListings.length === 0) {
-            return;
-        }
-        const dialog = freeStoreItemDialog.value;
-        if (dialog.visible) {
-            dialog.listings.push(...newListings);
-        } else {
-            dialog.listings = newListings;
-        }
-        dialog.visible = true;
-    }
-
     function testNotification() {
         playNoty({
             type: 'Event',
@@ -1454,14 +1275,10 @@ export const useNotificationStore = defineStore('Notification', () => {
         notificationTable,
         unseenNotifications,
         isNotificationsLoading,
-        inventoryBundleDialog,
-        freeStoreItemDialog,
 
         initNotifications,
         expireNotification,
         refreshNotifications,
-        checkInventoryBundles,
-        checkFreeStoreItems,
         queueNotificationNoty,
         playNoty,
         queueGameLogNoty,

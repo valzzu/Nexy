@@ -49,9 +49,7 @@ vi.mock('../../queries', () => ({
     }
 }));
 
-import avatarRequest from '../avatar';
 import userRequest from '../user';
-import worldRequest from '../world';
 
 describe('entity mutation query sync', () => {
     beforeEach(() => {
@@ -66,30 +64,6 @@ describe('entity mutation query sync', () => {
         expect(mockPatchAndRefetchActiveQuery).toHaveBeenCalledWith(
             expect.objectContaining({
                 queryKey: ['user', 'usr_me']
-            })
-        );
-    });
-
-    test('saveAvatar patches and refetches active avatar query', async () => {
-        mockRequest.mockResolvedValue({ id: 'avtr_1', name: 'Avatar' });
-
-        await avatarRequest.saveAvatar({ id: 'avtr_1', name: 'Avatar' });
-
-        expect(mockPatchAndRefetchActiveQuery).toHaveBeenCalledWith(
-            expect.objectContaining({
-                queryKey: ['avatar', 'avtr_1']
-            })
-        );
-    });
-
-    test('saveWorld patches and refetches active world query', async () => {
-        mockRequest.mockResolvedValue({ id: 'wrld_1', name: 'World' });
-
-        await worldRequest.saveWorld({ id: 'wrld_1', name: 'World' });
-
-        expect(mockPatchAndRefetchActiveQuery).toHaveBeenCalledWith(
-            expect.objectContaining({
-                queryKey: ['world', 'wrld_1']
             })
         );
     });

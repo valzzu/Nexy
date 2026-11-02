@@ -5,12 +5,9 @@ import { useAdvancedSettingsStore } from './settings/advanced';
 import { useActivityStore } from './activity';
 import { useAppearanceSettingsStore } from './settings/appearance';
 import { useAuthStore } from './auth';
-import { useAvatarProviderStore } from './avatarProvider';
-import { useAvatarStore } from './avatar';
 import { useChartsStore } from './charts';
 import { useDashboardStore } from './dashboard';
 import { useExternalLinkStore } from './externalLink';
-import { useDiscordPresenceSettingsStore } from './settings/discordPresence';
 import { useFavoriteStore } from './favorite';
 import { useFeedStore } from './feed';
 import { useFriendStore } from './friend';
@@ -28,7 +25,6 @@ import { useModalStore } from './modal';
 import { useModerationStore } from './moderation';
 import { useNotificationStore } from './notification';
 import { useNotificationsSettingsStore } from './settings/notifications';
-import { usePhotonStore } from './photon';
 import { useSearchStore } from './search';
 import { useSharedFeedStore } from './sharedFeed';
 import { useUiStore } from './ui';
@@ -37,7 +33,6 @@ import { useUpdateLoopStore } from './updateLoop';
 import { useUserStore } from './user';
 import { useVRCXUpdaterStore } from './vrcxUpdater';
 import { useVrStore } from './vr';
-import { useVrcStatusStore } from './vrcStatus';
 import { useVrcxStore } from './vrcx';
 import { useWorldStore } from './world';
 import { useWristOverlaySettingsStore } from './settings/wristOverlay';
@@ -81,7 +76,6 @@ async function registerSentryPiniaPlugin() {
                     cachedPlayerModerations: null,
                     cachedPlayerModerationsUserIds: null
                 },
-                Photon: null,
                 SharedFeed: {
                     // @ts-ignore
                     ...state.SharedFeed,
@@ -90,24 +84,7 @@ async function registerSentryPiniaPlugin() {
                 Group: {
                     // @ts-ignore
                     ...state.Group,
-                    groupInstances: null,
-                    inGameGroupOrder: null
-                },
-                Avatar: {
-                    // @ts-ignore
-                    ...state.Avatar,
-                    avatarHistory: null
-                },
-                Gallery: {
-                    // @ts-ignore
-                    ...state.Gallery,
-                    emojiTable: null,
-                    galleryTable: null,
-                    instanceStickersCache: null,
-                    inventoryTable: null,
-                    printTable: null,
-                    stickerTable: null,
-                    VRCPlusIconsTable: null
+                    groupInstances: null
                 }
             })
         })
@@ -123,18 +100,14 @@ export function createGlobalStores() {
         advancedSettings: useAdvancedSettingsStore(),
         activity: useActivityStore(),
         appearanceSettings: useAppearanceSettingsStore(),
-        discordPresenceSettings: useDiscordPresenceSettingsStore(),
         generalSettings: useGeneralSettingsStore(),
         notificationsSettings: useNotificationsSettingsStore(),
         wristOverlaySettings: useWristOverlaySettingsStore(),
-        avatarProvider: useAvatarProviderStore(),
         externalLink: useExternalLinkStore(),
         favorite: useFavoriteStore(),
         friend: useFriendStore(),
-        photon: usePhotonStore(),
         user: useUserStore(),
         vrcxUpdater: useVRCXUpdaterStore(),
-        avatar: useAvatarStore(),
         world: useWorldStore(),
         group: useGroupStore(),
         location: useLocationStore(),
@@ -155,7 +128,6 @@ export function createGlobalStores() {
         sharedFeed: useSharedFeedStore(),
         updateLoop: useUpdateLoopStore(),
         auth: useAuthStore(),
-        vrcStatus: useVrcStatusStore(),
         charts: useChartsStore(),
         dashboard: useDashboardStore(),
         modal: useModalStore(),
@@ -165,8 +137,6 @@ export function createGlobalStores() {
 
 export {
     useAuthStore,
-    useAvatarStore,
-    useAvatarProviderStore,
     useExternalLinkStore,
     useFavoriteStore,
     useFeedStore,
@@ -181,14 +151,12 @@ export {
     useLocationStore,
     useModerationStore,
     useNotificationStore,
-    usePhotonStore,
     useSearchStore,
     useChartsStore,
     useDashboardStore,
     useAdvancedSettingsStore,
     useActivityStore,
     useAppearanceSettingsStore,
-    useDiscordPresenceSettingsStore,
     useGeneralSettingsStore,
     useNotificationsSettingsStore,
     useWristOverlaySettingsStore,
@@ -201,7 +169,6 @@ export {
     useWorldStore,
     useSharedFeedStore,
     useUpdateLoopStore,
-    useVrcStatusStore,
     useModalStore,
     useQuickSearchStore
 };

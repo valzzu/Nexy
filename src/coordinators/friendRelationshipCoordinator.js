@@ -3,7 +3,6 @@ import { i18n } from '../plugins/i18n';
 import { database } from '../services/database';
 import { friendRequest, userRequest } from '../api';
 import { getNameColour } from '../shared/utils';
-import { handleFavoriteDelete } from './favoriteCoordinator';
 import { useAppearanceSettingsStore } from '../stores/settings/appearance';
 import { useFriendStore } from '../stores/friend';
 import { useModalStore } from '../stores/modal';
@@ -386,7 +385,6 @@ export function runDeleteFriendshipFlow(id, { nowIso = () => new Date().toJSON()
                 sharedFeedStore.addEntry(friendLogHistory);
                 friendLog.delete(id);
                 database.deleteFriendLogCurrent(id);
-                handleFavoriteDelete(id);
                 if (!appearanceSettingsStore.hideUnfriends) {
                     uiStore.notifyMenu('friend-log');
                 }

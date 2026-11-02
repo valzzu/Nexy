@@ -148,7 +148,6 @@ applyGpuPreferences(app, VRCXStorage);
 interopApi.getDotNetObject('ProgramElectron').Init();
 interopApi.getDotNetObject('SQLite').Init();
 interopApi.getDotNetObject('AppApiElectron').Init();
-interopApi.getDotNetObject('Discord').Init();
 interopApi.getDotNetObject('WebApi').Init();
 // NexVR game sessions come from realtime; the legacy watcher reads VRChat logs.
 

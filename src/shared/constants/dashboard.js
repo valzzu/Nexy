@@ -6,7 +6,6 @@ export const DASHBOARD_BLOCKED_PANEL_KEYS = new Set([
     'friend-list',
     'moderation',
     'charts-instance',
-    'charts-mutual',
     'charts-hot-worlds',
     'tools'
 ]);

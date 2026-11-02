@@ -100,9 +100,6 @@
                             variant="outline">
                             {{ t('dialog.world.tags.avatar_scaling_disabled') }}
                         </Badge>
-                        <Badge class="mr-1.5" v-if="currentInstanceWorld.inCache" variant="outline">
-                            <span>{{ currentInstanceWorld.cacheSize }} {{ t('dialog.world.tags.cache') }}</span>
-                        </Badge>
                     </div>
                     <div class="mt-1.5">
                         <LocationWorld
@@ -163,10 +160,6 @@
                 </div>
             </div>
 
-            <div class="mb-2" v-if="photonLoggingEnabled" ref="playerListPhotonRef">
-                <PhotonEventTable @show-chatbox-blacklist="showChatboxBlacklistDialog" />
-            </div>
-
             <div class="current-instance-table flex min-h-0 min-w-0 flex-1">
                 <DataTableLayout
                     class="[&_th]:px-2.5! [&_th]:py-0.75! [&_td]:px-2.5! [&_td]:py-0.75! [&_tr]:h-7!"
@@ -177,9 +170,6 @@
                     :on-row-click="handlePlayerListRowClick" />
             </div>
         </div>
-        <ChatboxBlacklistDialog
-            :chatbox-blacklist-dialog="chatboxBlacklistDialog"
-            @delete-chatbox-user-blacklist="deleteChatboxUserBlacklist" />
     </div>
 </template>
 
@@ -194,7 +184,6 @@
         useGalleryStore,
         useInstanceStore,
         useLocationStore,
-        usePhotonStore,
         useUserStore
     } from '../../stores';
     import { commaNumber, formatDateFilter } from '../../shared/utils';
@@ -203,19 +192,14 @@
     import { createColumns } from './columns.jsx';
     import { useVrcxVueTable } from '../../lib/table/useVrcxVueTable';
 
-    import ChatboxBlacklistDialog from './dialogs/ChatboxBlacklistDialog.vue';
     import Timer from '../../components/Timer.vue';
     import { showUserDialog, lookupUser } from '../../coordinators/userCoordinator';
     import { showWorldDialog } from '../../coordinators/worldCoordinator';
 
-    import PhotonEventTable from './components/PhotonEventTable.vue';
     import { useUserDisplay } from '../../composables/useUserDisplay';
 
     const { randomUserColours } = storeToRefs(useAppearanceSettingsStore());
     const { userImage } = useUserDisplay();
-    const photonStore = usePhotonStore();
-    const { photonLoggingEnabled, chatboxUserBlacklist } = storeToRefs(photonStore);
-    const { saveChatboxUserBlacklist } = photonStore;
 
     const { lastLocation } = storeToRefs(useLocationStore());
     const { currentInstanceLocation, currentInstanceWorld, currentInstanceUsersData } = storeToRefs(useInstanceStore());
@@ -234,19 +218,8 @@
 
     const playerListRef = ref(null);
     const playerListHeaderRef = ref(null);
-    const playerListPhotonRef = ref(null);
 
     const { t } = useI18n();
-
-    const chatboxBlacklistDialog = ref({
-        visible: false,
-        loading: false
-    });
-
-    function showChatboxBlacklistDialog() {
-        const D = chatboxBlacklistDialog.value;
-        D.visible = true;
-    }
 
     /**
      * @param val
@@ -264,24 +237,6 @@
     }
 
     /**
-     * @param userId
-     */
-    async function deleteChatboxUserBlacklist(userId) {
-        chatboxUserBlacklist.value.delete(userId);
-        await saveChatboxUserBlacklist();
-        getCurrentInstanceUserList();
-    }
-
-    /**
-     * @param user
-     */
-    async function addChatboxUserBlacklist(user) {
-        chatboxUserBlacklist.value.set(user.id, user.displayName);
-        await saveChatboxUserBlacklist();
-        getCurrentInstanceUserList();
-    }
-
-    /**
      * @param a
      * @param b
      * @param field
@@ -294,9 +249,6 @@
     const playerListColumns = computed(() =>
         createColumns({
             randomUserColours,
-            chatboxUserBlacklist,
-            onBlockChatbox: addChatboxUserBlacklist,
-            onUnblockChatbox: deleteChatboxUserBlacklist,
             sortAlphabetically,
             userImage
         })
@@ -319,18 +271,6 @@
                 ...prev,
                 columns: next
             }));
-        },
-        { immediate: true }
-    );
-
-    watch(
-        photonLoggingEnabled,
-        (enabled) => {
-            const column = playerListTable?.getColumn?.('photonId');
-            if (!column) {
-                return;
-            }
-            column.toggleVisibility(Boolean(enabled));
         },
         { immediate: true }
     );

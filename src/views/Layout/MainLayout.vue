@@ -64,22 +64,11 @@
 
         <!-- ## Dialogs ## -->
         <MainDialogContainer />
-        <InviteGroupDialog />
         <GroupEditDialog />
         <GroupEventEditDialog />
         <FullscreenImagePreview />
         <LaunchDialog />
-        <LaunchOptionsDialog />
-        <FriendImportDialog />
-        <WorldImportDialog />
-        <AvatarImportDialog />
-        <ChooseFavoriteGroupDialog />
-        <VRChatConfigDialog />
         <PrimaryPasswordDialog />
-        <SendBoopDialog />
-        <InventoryBundleDialog />
-        <FreeStoreItemDialog />
-        <ModerationReportDialog />
         <GlobalToolsDialogs />
         <ChangelogDialog />
         <WhatsNewDialog />
@@ -101,28 +90,17 @@
     import { useMainLayoutResizable } from '../../composables/useMainLayoutResizable';
     import { watchState } from '../../services/watchState';
 
-    import AvatarImportDialog from '../Favorites/dialogs/AvatarImportDialog.vue';
     import ChangelogDialog from '../Settings/dialogs/ChangelogDialog.vue';
-    import ChooseFavoriteGroupDialog from '../../components/dialogs/ChooseFavoriteGroupDialog.vue';
-    import FreeStoreItemDialog from '../../components/dialogs/FreeStoreItemDialog.vue';
-    import FriendImportDialog from '../Favorites/dialogs/FriendImportDialog.vue';
     import FullscreenImagePreview from '../../components/FullscreenImagePreview.vue';
     import GlobalToolsDialogs from '../Tools/components/GlobalToolsDialogs.vue';
     import GroupEditDialog from '../../components/dialogs/GroupDialog/GroupEditDialog.vue';
     import GroupEventEditDialog from '../../components/dialogs/GroupDialog/GroupEventEditDialog.vue';
-    import InventoryBundleDialog from '../../components/dialogs/InventoryBundleDialog.vue';
-    import InviteGroupDialog from '../../components/dialogs/InviteGroupDialog.vue';
     import LaunchDialog from '../../components/dialogs/LaunchDialog.vue';
-    import LaunchOptionsDialog from '../Settings/dialogs/LaunchOptionsDialog.vue';
     import MainDialogContainer from '../../components/dialogs/MainDialogContainer.vue';
-    import ModerationReportDialog from '../../components/dialogs/ModerationReportDialog.vue';
     import NavMenu from '../../components/nav-menu/NavMenu.vue';
     import PrimaryPasswordDialog from '../Settings/dialogs/PrimaryPasswordDialog.vue';
-    import SendBoopDialog from '../../components/dialogs/SendBoopDialog.vue';
     import Sidebar from '../Sidebar/Sidebar.vue';
     import StatusBar from '../../components/StatusBar.vue';
-    import VRChatConfigDialog from '../Settings/dialogs/VRChatConfigDialog.vue';
-    import WorldImportDialog from '../Favorites/dialogs/WorldImportDialog.vue';
     import WhatsNewDialog from '../../components/onboarding/WhatsNewDialog.vue';
     import SpotlightDialog from '../../components/onboarding/SpotlightDialog.vue';
 

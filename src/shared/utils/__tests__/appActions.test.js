@@ -100,14 +100,6 @@ describe('appActions utils', () => {
         expect(mocks.toast.error).toHaveBeenCalledWith('copy failed');
     });
 
-    test('openExternalLink returns early when direct access parse succeeds', async () => {
-        mocks.searchStore.directAccessParse.mockReturnValue(true);
-        openExternalLink('vrcx://user/usr_1');
-        await flushPromises();
-        expect(mocks.externalLinkStore.showExternalLinkDialog).not.toHaveBeenCalled();
-        expect(AppApi.OpenLink).not.toHaveBeenCalled();
-    });
-
     test('openExternalLink shows the external link dialog', () => {
         openExternalLink('https://example.com');
 

@@ -1,7 +1,6 @@
 import { getGroupName, getWorldName, parseLocation } from '../shared/utils';
 import { AppDebug } from '../services/appConfig';
 import { database } from '../services/database';
-import { getAvatarName } from './avatarCoordinator';
 import { useFeedStore } from '../stores/feed';
 import { useFriendStore } from '../stores/friend';
 import { useGroupStore } from '../stores/group';
@@ -31,7 +30,7 @@ export async function runHandleUserUpdateFlow(ref, props, { now = Date.now, nowI
     const notificationStore = useNotificationStore();
     const sharedFeedStore = useSharedFeedStore();
 
-    const { state, userDialog, applyUserDialogLocation, checkNote } = userStore;
+    const { state, userDialog, applyUserDialogLocation } = userStore;
 
     let feed;
     let newLocation;
@@ -144,93 +143,6 @@ export async function runHandleUserUpdateFlow(ref, props, { now = Date.now, nowI
         ref.$previousLocation = props.location[1];
         ref.$travelingToTime = now();
     }
-    if (ref.bannerType === 'avatarBanner' && props.bannerUrl && props.bannerUrl[0]) {
-        const currentBannerUrl = props.bannerUrl[0];
-        const previousBannerUrl = props.bannerUrl[1];
-        let avatarInfo = {
-            ownerId: '',
-            avatarName: ''
-        };
-        try {
-            avatarInfo = await getAvatarName(currentBannerUrl);
-        } catch (err) {
-            console.log(err);
-        }
-        if (avatarInfo.ownerId) {
-            let previousAvatarInfo = {
-                ownerId: '',
-                avatarName: ''
-            };
-            try {
-                previousAvatarInfo = await getAvatarName(previousBannerUrl);
-            } catch (err) {
-                console.log(err);
-            }
-            feed = {
-                created_at: nowIso(),
-                type: 'Avatar',
-                userId: ref.id,
-                displayName: ref.displayName,
-                ownerId: avatarInfo.ownerId,
-                previousOwnerId: previousAvatarInfo.ownerId,
-                avatarName: avatarInfo.avatarName,
-                previousAvatarName: previousAvatarInfo.avatarName,
-                currentAvatarImageUrl: avatarInfo.ownerId ? currentBannerUrl : '',
-                currentAvatarThumbnailImageUrl: avatarInfo.ownerId ? currentBannerUrl : '',
-                previousCurrentAvatarImageUrl: previousAvatarInfo.ownerId ? previousBannerUrl : '',
-                previousCurrentAvatarThumbnailImageUrl: previousAvatarInfo.ownerId ? previousBannerUrl : ''
-            };
-            notificationStore.queueFeedNoty(feed);
-            sharedFeedStore.addEntry(feed);
-            const persistedFeed = await database.addAvatarToDatabase(feed);
-            if (persistedFeed) {
-                feedStore.addFeedEntry(persistedFeed);
-            }
-        }
-    } else if (props.iconUrl && props.iconUrl[0]) {
-        const currentIconUrl = props.iconUrl[0];
-        const previousIconUrl = props.iconUrl[1];
-        let avatarInfo = {
-            ownerId: '',
-            avatarName: ''
-        };
-        try {
-            avatarInfo = await getAvatarName(currentIconUrl);
-        } catch (err) {
-            console.log(err);
-        }
-        if (avatarInfo.ownerId) {
-            let previousAvatarInfo = {
-                ownerId: '',
-                avatarName: ''
-            };
-            try {
-                previousAvatarInfo = await getAvatarName(previousIconUrl);
-            } catch (err) {
-                console.log(err);
-            }
-            feed = {
-                created_at: nowIso(),
-                type: 'Avatar',
-                userId: ref.id,
-                displayName: ref.displayName,
-                ownerId: avatarInfo.ownerId,
-                previousOwnerId: previousAvatarInfo.ownerId,
-                avatarName: avatarInfo.avatarName,
-                previousAvatarName: previousAvatarInfo.avatarName,
-                currentAvatarImageUrl: avatarInfo.ownerId ? currentIconUrl : '',
-                currentAvatarThumbnailImageUrl: avatarInfo.ownerId ? currentIconUrl : '',
-                previousCurrentAvatarImageUrl: previousAvatarInfo.ownerId ? previousIconUrl : '',
-                previousCurrentAvatarThumbnailImageUrl: previousAvatarInfo.ownerId ? previousIconUrl : ''
-            };
-            notificationStore.queueFeedNoty(feed);
-            sharedFeedStore.addEntry(feed);
-            const persistedFeed = await database.addAvatarToDatabase(feed);
-            if (persistedFeed) {
-                feedStore.addFeedEntry(persistedFeed);
-            }
-        }
-    }
     // if status is offline, ignore status and statusDescription
     if (
         (props.status && props.status[0] !== 'offline' && props.status[1] !== 'offline') ||
@@ -278,8 +190,5 @@ export async function runHandleUserUpdateFlow(ref, props, { now = Date.now, nowI
         if (persistedFeed) {
             feedStore.addFeedEntry(persistedFeed);
         }
-    }
-    if (props.note && props.note[0] !== null && props.note[0] !== props.note[1]) {
-        checkNote(ref.id, props.note[0]);
     }
 }

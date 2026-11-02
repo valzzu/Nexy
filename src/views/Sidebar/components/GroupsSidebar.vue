@@ -113,7 +113,6 @@
 
     const launchStore = useLaunchStore();
     const { isAgeGatedInstancesVisible } = storeToRefs(useAppearanceSettingsStore());
-    const { sortGroupInstancesByInGame } = useGroupStore();
     const { groupInstances } = storeToRefs(useGroupStore());
     const { checkCanInviteSelf } = useInviteChecks();
 
@@ -140,7 +139,9 @@
                 };
             }
         });
-        return Array.from(groupMap.values()).sort(sortGroupInstancesByInGame);
+        return Array.from(groupMap.values()).sort((a, b) =>
+            String(a?.group?.name ?? '').localeCompare(String(b?.group?.name ?? ''))
+        );
     });
 
     const buildGroupHeaderRowLocal = (group, index) => buildGroupHeaderRow(group, index, groupInstancesCfg.value);

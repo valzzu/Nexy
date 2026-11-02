@@ -6,17 +6,15 @@ import {
     createDefaultWorldRef,
     evictMapCache,
     getAvailablePlatforms,
-    getBundleDateSize,
     isRealInstance,
     parseLocation,
     sanitizeEntityJson
 } from '../shared/utils';
 import { getWorldMemo } from './memoCoordinator';
-import { instanceRequest, queryRequest, worldRequest } from '../api';
+import { instanceRequest, worldRequest } from '../api';
 import { database } from '../services/database';
 import { patchWorldFromEvent } from '../queries';
 import { processBulk } from '../services/request';
-import { applyFavorite } from './favoriteCoordinator';
 import { useFavoriteStore } from '../stores/favorite';
 import { useInstanceStore } from '../stores/instance';
 import { useLocationStore } from '../stores/location';
@@ -67,11 +65,6 @@ export function showWorldDialog(tag, shortName = null, options = {}) {
     D.id = L.worldId;
     D.$location = L;
     D.loading = true;
-    D.inCache = false;
-    D.cacheSize = '';
-    D.cacheLocked = false;
-    D.cachePath = '';
-    D.fileAnalysis = {};
     D.rooms = [];
     D.lastVisit = '';
     D.visitCount = 0;
@@ -82,7 +75,6 @@ export function showWorldDialog(tag, shortName = null, options = {}) {
     D.isPC = false;
     D.isQuest = false;
     D.isIos = false;
-    D.hasPersistData = false;
     D.listings = [];
     D.memo = '';
     const LL = parseLocation(locationStore.lastLocation.location);
@@ -140,26 +132,13 @@ export function showWorldDialog(tag, shortName = null, options = {}) {
                 }
                 D.visible = true;
                 D.loading = false;
-                D.isFavorite = favoriteStore.getCachedFavoritesByObjectId(D.id);
-                if (!D.isFavorite) {
-                    D.isFavorite = favoriteStore.localWorldFavoritesList.includes(D.id);
-                }
+                D.isFavorite = favoriteStore.localWorldFavoritesList.includes(D.id);
                 let { isPC, isQuest, isIos } = getAvailablePlatforms(args.ref.unityPackages);
                 D.avatarScalingDisabled = args.ref?.tags.includes('feature_avatar_scaling_disabled');
                 D.focusViewDisabled = args.ref?.tags.includes('feature_focus_view_disabled');
                 D.isPC = isPC;
                 D.isQuest = isQuest;
                 D.isIos = isIos;
-                worldStore.updateVRChatWorldCache();
-                queryRequest
-                    .fetch('worldPersistData', {
-                        worldId: D.id
-                    })
-                    .then((args) => {
-                        if (args.params.worldId === worldStore.worldDialog.id && worldStore.worldDialog.visible) {
-                            worldStore.worldDialog.hasPersistData = args.json !== false;
-                        }
-                    });
             }
         });
 }
@@ -186,7 +165,6 @@ export function applyWorld(json) {
         Object.assign(ref, json);
     }
     ref.$isLabs = ref.tags.includes('system_labs');
-    applyFavorite('world', ref.id);
     const userDialog = userStore.userDialog;
     if (userDialog.visible && userDialog.$location.worldId === ref.id) {
         userStore.applyUserDialogLocation();
@@ -204,9 +182,6 @@ export function applyWorld(json) {
                     instanceId: room.id
                 });
             }
-        }
-        if (Object.keys(worldDialog.fileAnalysis).length === 0) {
-            getBundleDateSize(ref);
         }
     }
     if (favoriteStore.localWorldFavoritesList.includes(ref.id)) {

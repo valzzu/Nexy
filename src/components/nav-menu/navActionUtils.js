@@ -28,15 +28,9 @@ export function navigateToRoute(router, routeName, routeParams = undefined) {
  * @param {object | null | undefined} entry
  * @param {object} deps
  * @param {object} deps.router
- * @param {Function} deps.directAccessPaste
  */
-export function triggerNavEntryAction(entry, { router, directAccessPaste }) {
+export function triggerNavEntryAction(entry, { router }) {
     if (!entry) {
-        return;
-    }
-
-    if (entry.action === 'direct-access') {
-        directAccessPaste();
         return;
     }
 

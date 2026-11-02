@@ -1,7 +1,6 @@
-import { NEXVR_HIDDEN_NAV_KEYS } from './nexvr';
 import { toolNavDefinitions } from './tools';
 
-const allNavDefinitions = [
+const navDefinitions = [
     {
         key: 'feed',
         icon: 'ri-rss-line',
@@ -38,27 +37,6 @@ const allNavDefinitions = [
         routeName: 'search'
     },
     {
-        key: 'favorite-friends',
-        icon: 'ri-user-heart-line',
-        tooltip: 'nav_tooltip.favorite_friends',
-        labelKey: 'nav_tooltip.favorite_friends',
-        routeName: 'favorite-friends'
-    },
-    {
-        key: 'favorite-worlds',
-        icon: 'ri-earth-line',
-        tooltip: 'nav_tooltip.favorite_worlds',
-        labelKey: 'nav_tooltip.favorite_worlds',
-        routeName: 'favorite-worlds'
-    },
-    {
-        key: 'favorite-avatars',
-        icon: 'ri-empathize-line',
-        tooltip: 'nav_tooltip.favorite_avatars',
-        labelKey: 'nav_tooltip.favorite_avatars',
-        routeName: 'favorite-avatars'
-    },
-    {
         key: 'friend-log',
         icon: 'ri-contacts-line',
         tooltip: 'nav_tooltip.friend_log',
@@ -87,25 +65,11 @@ const allNavDefinitions = [
         routeName: 'notification'
     },
     {
-        key: 'my-avatars',
-        icon: 'ri-contacts-book-3-line',
-        tooltip: 'nav_tooltip.my_avatars',
-        labelKey: 'nav_tooltip.my_avatars',
-        routeName: 'my-avatars'
-    },
-    {
         key: 'charts-instance',
         icon: 'ri-bar-chart-horizontal-line',
         tooltip: 'view.charts.instance_activity.header',
         labelKey: 'view.charts.instance_activity.header',
         routeName: 'charts-instance'
-    },
-    {
-        key: 'charts-mutual',
-        icon: 'ri-group-2-line',
-        tooltip: 'view.charts.mutual_friend.tab_label',
-        labelKey: 'view.charts.mutual_friend.tab_label',
-        routeName: 'charts-mutual'
     },
     {
         key: 'charts-hot-worlds',
@@ -121,16 +85,7 @@ const allNavDefinitions = [
         labelKey: 'nav_tooltip.tools',
         routeName: 'tools'
     },
-    {
-        key: 'direct-access',
-        icon: 'ri-compass-3-line',
-        tooltip: 'prompt.direct_access_omni.header',
-        labelKey: 'prompt.direct_access_omni.header',
-        action: 'direct-access'
-    },
     ...toolNavDefinitions
 ];
-
-const navDefinitions = allNavDefinitions.filter((definition) => !NEXVR_HIDDEN_NAV_KEYS.has(definition.key));
 
 export { navDefinitions };

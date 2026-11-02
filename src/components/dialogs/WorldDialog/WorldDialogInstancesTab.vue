@@ -64,7 +64,6 @@
                                                 <User class="size-4 text-muted-foreground" />
                                             </AvatarFallback>
                                         </Avatar>
-                                        <IconFrame :icon-frame="room.$location.user.iconFrame" />
                                     </div>
                                     <div class="flex-1 overflow-hidden">
                                         <span
@@ -92,7 +91,6 @@
                                             <User class="size-4 text-muted-foreground" />
                                         </AvatarFallback>
                                     </Avatar>
-                                    <IconFrame :icon-frame="user.iconFrame" />
                                 </div>
                                 <div class="flex-1 overflow-hidden">
                                     <span
@@ -156,7 +154,6 @@
 <script setup>
     import { Globe2, Languages, LockKeyhole, User } from 'lucide-vue-next';
     import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-    import IconFrame from '@/components/IconFrame.vue';
     import { Button } from '@/components/ui/button';
     import { InputGroupTextareaField } from '@/components/ui/input-group';
     import { Spinner } from '@/components/ui/spinner';

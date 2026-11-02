@@ -1,15 +1,12 @@
 import { defineStore } from 'pinia';
 import { watch } from 'vue';
 
-import { isRpcWorld } from '../shared/utils';
 import { useAdvancedSettingsStore } from './settings/advanced';
 import { useAppearanceSettingsStore } from './settings/appearance';
 import { useFriendStore } from './friend';
-import { useGameLogStore } from './gameLog';
 import { useGameStore } from './game';
 import { useLocationStore } from './location';
 import { useNotificationsSettingsStore } from './settings/notifications';
-import { usePhotonStore } from './photon';
 import { useSharedFeedStore } from './sharedFeed';
 import { useUserStore } from './user';
 import { useWristOverlaySettingsStore } from './settings/wristOverlay';
@@ -21,10 +18,8 @@ export const useVrStore = defineStore('Vr', () => {
     const wristOverlaySettingsStore = useWristOverlaySettingsStore();
     const locationStore = useLocationStore();
     const notificationsSettingsStore = useNotificationsSettingsStore();
-    const photonStore = usePhotonStore();
     const appearanceSettingsStore = useAppearanceSettingsStore();
     const gameStore = useGameStore();
-    const gameLogStore = useGameLogStore();
     const userStore = useUserStore();
     const sharedFeedStore = useSharedFeedStore();
     if (LINUX) window.electron?.onVrOverlayReady?.(() => vrInit());
@@ -43,7 +38,6 @@ export const useVrStore = defineStore('Vr', () => {
     function vrInit() {
         updateVRConfigVars();
         updateVRLastLocation();
-        updateVrNowPlaying();
         // run these methods again to send data to the overlay
         sharedFeedStore.sendSharedFeed();
         friendStore.updateOnlineFriendCounter(true); // force an update
@@ -56,21 +50,7 @@ export const useVrStore = defineStore('Vr', () => {
         updateOpenVR();
     }
 
-    function updateVrNowPlaying() {
-        const json = JSON.stringify(gameLogStore.nowPlaying);
-        AppApi.ExecuteVrOverlayFunction('nowPlayingUpdate', json);
-    }
-
     function updateVRLastLocation() {
-        let progressPie = false;
-        if (advancedSettingsStore.progressPie) {
-            progressPie = true;
-            if (advancedSettingsStore.progressPieFilter) {
-                if (!isRpcWorld(locationStore.lastLocation.location)) {
-                    progressPie = false;
-                }
-            }
-        }
         let onlineFor = null;
         if (!wristOverlaySettingsStore.hideUptimeFromFeed) {
             onlineFor = userStore.currentUser.$online_for;
@@ -81,7 +61,6 @@ export const useVrStore = defineStore('Vr', () => {
             name: locationStore.lastLocation.name,
             playerList: Array.from(locationStore.lastLocation.playerList.values()),
             friendList: Array.from(locationStore.lastLocation.friendList.values()),
-            progressPie,
             onlineFor
         };
         const json = JSON.stringify(lastLocation);
@@ -102,7 +81,6 @@ export const useVrStore = defineStore('Vr', () => {
          * @property {boolean} minimalFeed
          * @property {string} notificationPosition
          * @property {number} notificationTimeout
-         * @property {number} photonOverlayMessageTimeout
          * @property {string} notificationTheme
          * @property {boolean} backgroundEnabled
          * @property {boolean} dtHour12
@@ -120,7 +98,6 @@ export const useVrStore = defineStore('Vr', () => {
             minimalFeed: wristOverlaySettingsStore.minimalFeed,
             notificationPosition: notificationsSettingsStore.notificationPosition,
             notificationTimeout: notificationsSettingsStore.notificationTimeout,
-            photonOverlayMessageTimeout: photonStore.photonOverlayMessageTimeout,
             notificationTheme,
             backgroundEnabled: wristOverlaySettingsStore.vrBackgroundEnabled,
             dtHour12: appearanceSettingsStore.dtHour12,
@@ -149,12 +126,7 @@ export const useVrStore = defineStore('Vr', () => {
             ((gameStore.isGameRunning && !gameStore.isGameNoVR) || wristOverlaySettingsStore.openVRAlways)
         ) {
             let hmdOverlay = false;
-            if (
-                notificationsSettingsStore.overlayNotifications ||
-                advancedSettingsStore.progressPie ||
-                photonStore.photonEventOverlay ||
-                photonStore.timeoutHudOverlay
-            ) {
+            if (notificationsSettingsStore.overlayNotifications) {
                 hmdOverlay = true;
             }
             newState = {
@@ -185,7 +157,6 @@ export const useVrStore = defineStore('Vr', () => {
     return {
         vrInit,
         saveOpenVROption,
-        updateVrNowPlaying,
         updateVRLastLocation,
         updateVRConfigVars,
         updateOpenVR

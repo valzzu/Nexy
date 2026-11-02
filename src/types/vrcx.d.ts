@@ -136,17 +136,6 @@ export interface RequestOptions {
     params?: any;
     customMsg?: string;
     inviteId?: string;
-    uploadImage?: boolean;
-    uploadImageLegacy?: boolean;
-    uploadImagePrint?: boolean;
-    uploadFilePUT?: boolean;
-    imageData?: string;
-    postData?: string;
-    matchingDimensions?: boolean;
-    cropWhiteBorder?: boolean;
-    fileData?: string;
-    fileMIME?: string;
-    fileMD5?: string;
 }
 
 export interface WebApiOptions extends RequestOptions {

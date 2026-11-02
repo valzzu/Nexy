@@ -50,7 +50,7 @@ function debounce(func, delay) {
     };
 }
 
-// Re-export from appActions and cacheCoordinator for backward compatibility
+// Re-export from appActions for backward compatibility
 export {
     downloadAndSaveJson,
     copyToClipboard,
@@ -58,8 +58,6 @@ export {
     openDiscordProfile,
     openFolderGeneric
 } from './appActions';
-
-export { deleteVRChatCache, checkVRChatCache, getBundleDateSize } from '../../coordinators/cacheCoordinator';
 
 export {
     getAvailablePlatforms,

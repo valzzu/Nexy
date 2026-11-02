@@ -65,14 +65,10 @@ export function searchFriends(query, friends, comparer, limit = 10) {
         }
         let match = matchName(ctx.name, query, comparer);
         let matchedField = match ? 'name' : null;
-        // Include memo and note matching for friends (with raw query for spaces)
+        // Include memo matching for friends (with raw query for spaces)
         if (!match && ctx.ref.$memo && query.length >= 2) {
             match = localeIncludes(ctx.ref.$memo, query, comparer);
             if (match) matchedField = 'memo';
-        }
-        if (!match && ctx.ref.note && query.length >= 2) {
-            match = localeIncludes(ctx.ref.note, query, comparer);
-            if (match) matchedField = 'note';
         }
         if (match) {
             results.push({
@@ -81,57 +77,12 @@ export function searchFriends(query, friends, comparer, limit = 10) {
                 type: 'friend',
                 imageUrl: ctx.ref.currentAvatarThumbnailImageUrl,
                 memo: ctx.ref.$memo || '',
-                note: ctx.ref.note || '',
                 matchedField,
                 ref: ctx.ref
             });
         }
     }
     // Sort: prefix matches first, then alphabetically
-    results.sort((a, b) => {
-        const aPrefix = isPrefixMatch(a.name, query, comparer);
-        const bPrefix = isPrefixMatch(b.name, query, comparer);
-        if (aPrefix && !bPrefix) return -1;
-        if (bPrefix && !aPrefix) return 1;
-        return comparer.compare(a.name, b.name);
-    });
-    if (results.length > limit) {
-        results.length = limit;
-    }
-    return results;
-}
-
-/**
- * Search avatars from a Map (cachedAvatars or favorite avatars).
- *
- * @param {string} query
- * @param {Map} avatarMap
- * @param {Intl.Collator} comparer
- * @param {string | null} [authorId] - If provided, only match avatars by this author
- * @param {number} [limit]
- * @returns {{ id: string; name: string; type: string; imageUrl: string }[]}
- */
-export function searchAvatars(query, avatarMap, comparer, authorId = null, limit = 10) {
-    if (!query || !avatarMap) {
-        return [];
-    }
-    const results = [];
-    for (const ref of avatarMap.values()) {
-        if (!ref || !ref.name) {
-            continue;
-        }
-        if (authorId && ref.authorId !== authorId) {
-            continue;
-        }
-        if (matchName(ref.name, query, comparer)) {
-            results.push({
-                id: ref.id,
-                name: ref.name,
-                type: 'avatar',
-                imageUrl: ref.thumbnailImageUrl || ref.imageUrl
-            });
-        }
-    }
     results.sort((a, b) => {
         const aPrefix = isPrefixMatch(a.name, query, comparer);
         const bPrefix = isPrefixMatch(b.name, query, comparer);
@@ -217,46 +168,6 @@ export function searchGroups(query, groupMap, comparer, ownerId = null, limit = 
                 name: ref.name,
                 type: 'group',
                 imageUrl: ref.iconUrl || ref.bannerUrl
-            });
-        }
-    }
-    results.sort((a, b) => {
-        const aPrefix = isPrefixMatch(a.name, query, comparer);
-        const bPrefix = isPrefixMatch(b.name, query, comparer);
-        if (aPrefix && !bPrefix) return -1;
-        if (bPrefix && !aPrefix) return 1;
-        return comparer.compare(a.name, b.name);
-    });
-    if (results.length > limit) {
-        results.length = limit;
-    }
-    return results;
-}
-
-/**
- * Search favorite avatars from the favoriteStore array.
- *
- * @param {string} query
- * @param {Array} favoriteAvatars - FavoriteStore.favoriteAvatars array of { name, ref }
- * @param {Intl.Collator} comparer
- * @param {number} [limit]
- * @returns {{ id: string; name: string; type: string; imageUrl: string }[]}
- */
-export function searchFavoriteAvatars(query, favoriteAvatars, comparer, limit = 10) {
-    if (!query || !favoriteAvatars) {
-        return [];
-    }
-    const results = [];
-    for (const ctx of favoriteAvatars) {
-        if (!ctx?.ref?.name) {
-            continue;
-        }
-        if (matchName(ctx.ref.name, query, comparer)) {
-            results.push({
-                id: ctx.ref.id,
-                name: ctx.ref.name,
-                type: 'avatar',
-                imageUrl: ctx.ref.thumbnailImageUrl || ctx.ref.imageUrl
             });
         }
     }

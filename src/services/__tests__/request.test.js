@@ -55,32 +55,6 @@ describe('buildRequestInit', () => {
         expect(init.headers['X-Custom']).toBe('value');
     });
 
-    test('skips body/headers for upload requests', () => {
-        const init = buildRequestInit('file/upload', {
-            method: 'PUT',
-            uploadImage: true,
-            params: { something: 1 }
-        });
-        expect(init.body).toBeUndefined();
-        expect(init.headers).toBeUndefined();
-    });
-
-    test('skips body/headers for uploadFilePUT', () => {
-        const init = buildRequestInit('file/upload', {
-            method: 'PUT',
-            uploadFilePUT: true
-        });
-        expect(init.body).toBeUndefined();
-    });
-
-    test('skips body/headers for uploadImageLegacy', () => {
-        const init = buildRequestInit('file/upload', {
-            method: 'POST',
-            uploadImageLegacy: true
-        });
-        expect(init.body).toBeUndefined();
-    });
-
     test('passes through extra options', () => {
         const init = buildRequestInit('test', {
             method: 'DELETE',

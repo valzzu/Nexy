@@ -1,8 +1,6 @@
 import {
     isPrefixMatch,
     matchName,
-    searchAvatars,
-    searchFavoriteAvatars,
     searchFavoriteWorlds,
     searchFriends,
     searchGroups,
@@ -100,14 +98,6 @@ describe('searchFriends', () => {
         expect(results[0].matchedField).toBe('name');
     });
 
-    test('matches by note', () => {
-        const results = searchFriends('roommate', friends, comparer);
-        expect(results).toHaveLength(1);
-        expect(results[0].id).toBe('u3');
-        expect(results[0].matchedField).toBe('note');
-        expect(results[0].note).toBe('roommate');
-    });
-
     test('returns empty for short / empty query', () => {
         expect(searchFriends('', friends, comparer)).toEqual([]);
         expect(searchFriends(null, friends, comparer)).toEqual([]);
@@ -131,58 +121,6 @@ describe('searchFriends', () => {
 });
 
 // ── searchAvatars ──────────────────────────────────────────
-
-describe('searchAvatars', () => {
-    const avatarMap = new Map([
-        [
-            'a1',
-            {
-                id: 'a1',
-                name: 'Cool Avatar',
-                authorId: 'me',
-                thumbnailImageUrl: 'img1'
-            }
-        ],
-        [
-            'a2',
-            {
-                id: 'a2',
-                name: 'Nice Avatar',
-                authorId: 'other',
-                thumbnailImageUrl: 'img2'
-            }
-        ],
-        [
-            'a3',
-            {
-                id: 'a3',
-                name: 'Cool Suit',
-                authorId: 'me',
-                thumbnailImageUrl: 'img3'
-            }
-        ]
-    ]);
-
-    test('finds matching avatars', () => {
-        const results = searchAvatars('Cool', avatarMap, comparer);
-        expect(results).toHaveLength(2);
-    });
-
-    test('filters by authorId', () => {
-        const results = searchAvatars('Avatar', avatarMap, comparer, 'me');
-        expect(results).toHaveLength(1);
-        expect(results[0].id).toBe('a1');
-    });
-
-    test('returns all when authorId is null', () => {
-        const results = searchAvatars('Avatar', avatarMap, comparer, null);
-        expect(results).toHaveLength(2);
-    });
-
-    test('returns empty for null map', () => {
-        expect(searchAvatars('test', null, comparer)).toEqual([]);
-    });
-});
 
 // ── searchWorlds ───────────────────────────────────────────
 
@@ -271,35 +209,6 @@ describe('searchGroups', () => {
 });
 
 // ── searchFavoriteAvatars ──────────────────────────────────
-
-describe('searchFavoriteAvatars', () => {
-    const favorites = [
-        {
-            name: 'Fav Avatar',
-            ref: { id: 'fa1', name: 'Fav Avatar', thumbnailImageUrl: 'img1' }
-        },
-        {
-            name: 'Cool Fav',
-            ref: { id: 'fa2', name: 'Cool Fav', thumbnailImageUrl: 'img2' }
-        },
-        { name: 'Broken', ref: null }
-    ];
-
-    test('finds matching favorite avatars', () => {
-        const results = searchFavoriteAvatars('Fav', favorites, comparer);
-        expect(results).toHaveLength(2);
-        expect(results.map((r) => r.id)).toContain('fa1');
-    });
-
-    test('skips entries with null ref', () => {
-        const results = searchFavoriteAvatars('Broken', favorites, comparer);
-        expect(results).toHaveLength(0);
-    });
-
-    test('returns empty for null input', () => {
-        expect(searchFavoriteAvatars('test', null, comparer)).toEqual([]);
-    });
-});
 
 // ── searchFavoriteWorlds ───────────────────────────────────
 

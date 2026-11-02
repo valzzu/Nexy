@@ -1,42 +1,23 @@
-import { computed, reactive, ref, shallowReactive, watch } from 'vue';
+import { reactive, ref, shallowReactive, watch } from 'vue';
 import { defineStore } from 'pinia';
-import { useI18n } from 'vue-i18n';
 
-import {
-    compareByCreatedAt,
-    compareByDisplayName,
-    compareByLocationAt,
-    compareByName,
-    compareByUpdatedAt,
-    isRealInstance,
-    parseLocation,
-    replaceBioSymbols
-} from '../shared/utils';
+import { compareByDisplayName, compareByLocationAt, isRealInstance, parseLocation } from '../shared/utils';
 import { getAllUserMemos } from '../coordinators/memoCoordinator';
-import { instanceRequest, userRequest, cosmeticsRequest, marketplaceRequest } from '../api';
-import { AppDebug } from '../services/appConfig';
-import { database } from '../services/database';
-import { processBulk } from '../services/request';
+import { instanceRequest, userRequest } from '../api';
 import { runUpdateCurrentUserLocationFlow } from '../coordinators/locationCoordinator';
 import { useAppearanceSettingsStore } from './settings/appearance';
 import { useFriendStore } from './friend';
 import { useInstanceStore } from './instance';
 import { useLocationStore } from './location';
-import { useModalStore } from './modal';
-import { syncFriendSearchIndex } from '../coordinators/searchIndexCoordinator';
 import { useUiStore } from './ui';
 import { watchState } from '../services/watchState';
-
-import * as workerTimers from 'worker-timers';
 
 export const useUserStore = defineStore('User', () => {
     const appearanceSettingsStore = useAppearanceSettingsStore();
     const friendStore = useFriendStore();
     const locationStore = useLocationStore();
     const instanceStore = useInstanceStore();
-    const modalStore = useModalStore();
     const uiStore = useUiStore();
-    const { t } = useI18n();
 
     const currentUser = ref(
         /** @type {import('@/types/vrcx').VrcxCurrentUser} */ {
@@ -196,7 +177,6 @@ export const useUserStore = defineStore('User', () => {
         },
         friend: {},
         isFriend: false,
-        note: '',
         incomingRequest: false,
         outgoingRequest: false,
         isBlock: false,
@@ -302,69 +282,21 @@ export const useUserStore = defineStore('User', () => {
         status: '',
         statusDescription: '',
         pronouns: '',
-        bio: '',
-        bioLinks: [],
-        socialStatusHistoryTable: [],
-        bannerColor: '',
-        bannerUrl: '',
-        bannerType: '',
-        userIcon: '',
-        iconUrl: '',
-        themes: [],
-        themeId: '',
-        themeName: '',
-        themeButtonColor: '',
-        themeIconColor: '',
-        themeSubtextColor: '',
-        backgroundType: 'default',
-        backgroundTextureId: '',
-        backgroundGradientBottom: '',
-        backgroundGradientTop: '',
-        nameplateEffect: '',
-        profileEffect: '',
-        iconFrame: ''
+        bio: ''
     });
 
     const currentTravelers = reactive(new Map());
     const subsetOfLanguages = ref([]);
-    const sendBoopDialog = ref({
-        visible: false,
-        userId: ''
-    });
     const showUserDialogHistory = reactive(new Set());
     const customUserTags = reactive(new Map());
 
     const state = reactive({
-        instancePlayerCount: new Map(),
-        lastNoteCheck: null,
-        lastDbNoteDate: null,
-        notes: new Map()
+        instancePlayerCount: new Map()
     });
 
     const cachedUsers = shallowReactive(new Map());
     const cachedProfiles = ref(new Map());
     const cachedUserIdsByDisplayName = shallowReactive(new Map());
-
-    const cachedProfileEffects = shallowReactive(new Map());
-    const cachedIconFrames = shallowReactive(new Map());
-    const cachedNameplateEffects = shallowReactive(new Map());
-
-    const cachedPurchases = ref(new Map());
-    const activePurchases = computed(() =>
-        Array.from(cachedPurchases.value.values()).filter(
-            (purchase) => purchase.purchaseActive && purchase.buyerId === currentUser.value.id
-        )
-    );
-    const ownedListingIds = computed(() => new Set(activePurchases.value.map((purchase) => purchase.listingId)));
-    const ownedProductIds = computed(
-        () =>
-            new Set(activePurchases.value.flatMap((purchase) => (purchase.products ?? []).map((product) => product.id)))
-    );
-
-    const currentUserClientConfig = ref({
-        accessReduceDecorAnim: false,
-        configString: ''
-    });
 
     function addCachedUserDisplayNameEntry(displayName, userId) {
         if (!displayName || !userId) {
@@ -433,27 +365,6 @@ export const useUserStore = defineStore('User', () => {
         cachedUsers.clear();
         cachedProfiles.value.clear();
         cachedUserIdsByDisplayName.clear();
-        cachedPurchases.value.clear();
-    }
-
-    function setCachedPurchases(purchases) {
-        for (const purchase of purchases) {
-            cachedPurchases.value.set(purchase.purchaseId, purchase);
-        }
-    }
-
-    async function getAllProductPurchases() {
-        await processBulk({
-            fn: marketplaceRequest.getProductPurchases,
-            N: 0,
-            params: {
-                buyerId: currentUser.value.id,
-                order: 'desc',
-                sort: 'purchaseDate',
-                n: 50,
-                offset: 0
-            }
-        });
     }
 
     function rebuildCachedUserDisplayNameIndex() {
@@ -463,8 +374,6 @@ export const useUserStore = defineStore('User', () => {
         }
     }
 
-    const isLocalUserVrcPlusSupporter = computed(() => currentUser.value.$isVRCPlus || AppDebug.debugVrcPlus);
-
     watch(
         () => watchState.isLoggedIn,
         (isLoggedIn) => {
@@ -473,7 +382,6 @@ export const useUserStore = defineStore('User', () => {
                 showUserDialogHistory.clear();
                 state.instancePlayerCount.clear();
                 customUserTags.clear();
-                state.notes.clear();
                 subsetOfLanguages.value = [];
                 uiStore.clearDialogCrumbs();
             }
@@ -486,7 +394,6 @@ export const useUserStore = defineStore('User', () => {
         (isFriendsLoaded) => {
             if (isFriendsLoaded) {
                 getAllUserMemos();
-                initUserNotes();
             }
         },
         { flush: 'sync' }
@@ -648,139 +555,6 @@ export const useUserStore = defineStore('User', () => {
     }
 
     /**
-     * @param array
-     */
-    function getUserDialogAvatarComparator() {
-        const { avatarSorting } = userDialog.value;
-        if (avatarSorting === 'update') {
-            return compareByUpdatedAt;
-        }
-        if (avatarSorting === 'createdAt') {
-            return compareByCreatedAt;
-        }
-        return compareByName;
-    }
-
-    function sortUserDialogAvatars(array) {
-        userDialog.value.avatars = array.sort(getUserDialogAvatarComparator());
-    }
-
-    function sortUserDialogLicensedAvatars(array) {
-        userDialog.value.licensedAvatars = array.sort(getUserDialogAvatarComparator());
-    }
-
-    async function initUserNotes() {
-        state.lastNoteCheck = new Date();
-        state.lastDbNoteDate = null;
-        state.notes.clear();
-        try {
-            const users = cachedUsers;
-            const dbNotes = await database.getAllUserNotes();
-            for (const note of dbNotes) {
-                state.notes.set(note.userId, note.note);
-                const user = users.get(note.userId);
-                if (user) {
-                    user.note = note.note;
-                    const friendCtx = friendStore.friends.get(note.userId);
-                    if (friendCtx) {
-                        syncFriendSearchIndex(friendCtx);
-                    }
-                }
-                if (!state.lastDbNoteDate || state.lastDbNoteDate < note.createdAt) {
-                    state.lastDbNoteDate = note.createdAt;
-                }
-            }
-            await getLatestUserNotes();
-        } catch (error) {
-            console.error('Error initializing user notes:', error);
-        }
-    }
-
-    async function getLatestUserNotes() {
-        state.lastNoteCheck = new Date();
-        const params = {
-            offset: 0,
-            n: 10
-        };
-        const newNotes = new Map();
-        let done = false;
-        try {
-            for (let i = 0; i < 100; i++) {
-                params.offset = i * params.n;
-                const args = await userRequest.getUserNotes(params);
-                for (const note of args.json) {
-                    if (state.lastDbNoteDate && state.lastDbNoteDate > note.createdAt) {
-                        done = true;
-                    }
-                    if (!state.lastDbNoteDate || state.lastDbNoteDate < note.createdAt) {
-                        state.lastDbNoteDate = note.createdAt;
-                    }
-                    note.note = replaceBioSymbols(note.note);
-                    newNotes.set(note.targetUserId, note);
-                }
-                if (done || args.json.length === 0) {
-                    break;
-                }
-                params.n = 100;
-                await new Promise((resolve) => {
-                    workerTimers.setTimeout(resolve, 1000);
-                });
-            }
-        } catch (error) {
-            console.error('Error fetching user notes:', error);
-        }
-        const users = cachedUsers;
-
-        for (const note of newNotes.values()) {
-            const newNote = {
-                userId: note.targetUserId,
-                displayName: note.targetUser?.displayName || note.targetUserId,
-                note: note.note,
-                createdAt: note.createdAt
-            };
-            await database.addUserNote(newNote);
-            state.notes.set(note.targetUserId, note.note);
-            const user = users.get(note.targetUserId);
-            if (user) {
-                user.note = note.note;
-                const friendCtx = friendStore.friends.get(note.targetUserId);
-                if (friendCtx) {
-                    syncFriendSearchIndex(friendCtx);
-                }
-            }
-        }
-    }
-
-    /**
-     * @param userId
-     * @param newNote
-     */
-    async function checkNote(userId, newNote) {
-        if (!state.lastNoteCheck || state.lastNoteCheck.getTime() + 5 * 60 * 1000 > Date.now()) {
-            return;
-        }
-        const existingNote = state.notes.get(userId);
-        if (typeof existingNote !== 'undefined' && !newNote) {
-            console.log('deleting note', userId);
-            state.notes.delete(userId);
-            await database.deleteUserNote(userId);
-            return;
-        }
-        if (typeof existingNote === 'undefined' || existingNote !== newNote) {
-            console.log('detected note change', userId, newNote);
-            await getLatestUserNotes();
-        }
-    }
-
-    /**
-     * @param userId
-     */
-    function showSendBoopDialog(userId) {
-        sendBoopDialog.value.userId = userId;
-        sendBoopDialog.value.visible = true;
-    }
-
-    /**
      * @param {string} value
      */
     function setUserDialogMemo(value) {
@@ -850,59 +624,15 @@ export const useUserStore = defineStore('User', () => {
 
     function showEditProfileDialog() {
         const D = editProfileDialog.value;
-        const statusHistory = currentUser.value?.statusHistory || [];
-        const statusHistoryArray = [];
-        for (let i = 0; i < statusHistory.length; ++i) {
-            statusHistoryArray.push({
-                no: i + 1,
-                status: statusHistory[i]
-            });
-        }
-        D.socialStatusHistoryTable = statusHistoryArray;
-
         D.status = currentUser.value.status;
         D.statusDescription = currentUser.value.statusDescription;
         D.pronouns = currentUser.value.pronouns;
-        D.bannerColor = currentUser.value.bannerColor;
-        D.bannerUrl = currentUser.value.bannerUrl;
-        D.bannerType = currentUser.value.bannerType;
-        D.iconUrl = currentUser.value.iconUrl;
-
-        D.themeId = '';
-        D.themes = [];
-        D.themeName = '';
-        D.themeButtonColor = '';
-        D.themeIconColor = '';
-        D.themeSubtextColor = '';
 
         userRequest.getSelfProfile().then((args) => {
             const ref = args.json;
             D.selfProfileRef = ref;
-
-            D.status = ref.status;
-            D.statusDescription = ref.statusDescription;
             D.pronouns = ref.pronouns;
             D.bio = ref.bio;
-            D.bioLinks = ref.bioLinks.slice();
-            D.bannerColor = ref.bannerColor;
-            D.bannerUrl = ref.bannerUrl;
-            D.bannerType = ref.bannerType || 'color';
-            D.userIcon = ref.userIcon;
-
-            D.themes = ref.themes;
-            D.themeId = ref.themeId;
-            const selectedTheme = ref.themes.find((theme) => theme.id === ref.themeId);
-            D.themeName = selectedTheme?.name ?? '';
-            D.themeButtonColor = ref.themeButtonColor;
-            D.themeIconColor = ref.themeIconColor;
-            D.themeSubtextColor = ref.themeSubtextColor;
-            D.backgroundType = ref.backgroundType || 'default';
-            D.backgroundTextureId = ref.backgroundTextureId;
-            D.backgroundGradientBottom = ref.backgroundGradientBottom;
-            D.backgroundGradientTop = ref.backgroundGradientTop;
-            D.nameplateEffect = ref.nameplateEffect;
-            D.profileEffect = ref.profileEffect;
-            D.iconFrame = ref.iconFrame;
         });
 
         D.visible = true;
@@ -920,133 +650,6 @@ export const useUserStore = defineStore('User', () => {
         currentUser.value.$previousAvatarSwapTime = null;
     }
 
-    /**
-     * @param {string} command
-     */
-    async function confirmCurrentUserToggle(command, isEnableAction) {
-        const action = isEnableAction ? t('confirm.enable_action') : t('confirm.disable_action');
-        const { ok } = await modalStore.confirm({
-            title: t('confirm.title'),
-            description: t('confirm.command_question_toggle', {
-                action,
-                command
-            })
-        });
-        return ok;
-    }
-
-    async function toggleAvatarCopying() {
-        if (
-            !(await confirmCurrentUserToggle(
-                t('dialog.user.info.avatar_cloning'),
-                !currentUser.value.allowAvatarCopying
-            ))
-        ) {
-            return;
-        }
-        userRequest.saveCurrentUser({
-            allowAvatarCopying: !currentUser.value.allowAvatarCopying
-        });
-    }
-
-    async function toggleAllowBooping() {
-        if (!(await confirmCurrentUserToggle(t('dialog.user.info.booping'), !currentUser.value.isBoopingEnabled))) {
-            return;
-        }
-        userRequest.saveCurrentUser({
-            isBoopingEnabled: !currentUser.value.isBoopingEnabled
-        });
-    }
-
-    async function toggleSharedConnectionsOptOut() {
-        if (
-            !(await confirmCurrentUserToggle(
-                t('dialog.user.info.show_mutual_friends'),
-                currentUser.value.hasSharedConnectionsOptOut
-            ))
-        ) {
-            return;
-        }
-        userRequest.saveCurrentUser({
-            hasSharedConnectionsOptOut: !currentUser.value.hasSharedConnectionsOptOut
-        });
-    }
-
-    async function toggleDiscordFriendsOptOut() {
-        if (
-            !(await confirmCurrentUserToggle(
-                t('dialog.user.info.show_discord_connections'),
-                currentUser.value.hasDiscordFriendsOptOut
-            ))
-        ) {
-            return;
-        }
-        userRequest.saveCurrentUser({
-            hasDiscordFriendsOptOut: !currentUser.value.hasDiscordFriendsOptOut
-        });
-    }
-
-    async function toggleReducedProfileAnimations() {
-        const accessReduceDecorAnim = !currentUserClientConfig.value.accessReduceDecorAnim;
-        if (
-            !(await confirmCurrentUserToggle(t('dialog.user.info.reduced_profile_animations'), accessReduceDecorAnim))
-        ) {
-            return;
-        }
-        const { json } = await userRequest.saveClientConfig({ accessReduceDecorAnim });
-        currentUserClientConfig.value = json;
-    }
-
-    function getClientConfig() {
-        userRequest.getClientConfig().then(({ json }) => {
-            currentUserClientConfig.value = json;
-        });
-    }
-
-    function changePassword(currentPassword, password) {
-        return userRequest.saveCurrentUser({
-            currentPassword,
-            password
-        });
-    }
-
-    // check `currentUser.hideContentFilterSettings` before showing content filter settings in UI
-    function changeContentFilterSettings(contentFilters) {
-        return userRequest.saveCurrentUser({
-            contentFilters
-        });
-    }
-
-    watch(
-        () => watchState.isLoggedIn,
-        (isLoggedIn) => {
-            if (isLoggedIn) {
-                getCosmetics();
-                getClientConfig();
-                getAllProductPurchases();
-            }
-        },
-        { flush: 'sync' }
-    );
-
-    function getCosmetics() {
-        cosmeticsRequest.getProfileEffects().then(({ json }) => {
-            json.forEach((effect) => {
-                cachedProfileEffects.set(effect.id, effect);
-            });
-        });
-        cosmeticsRequest.getIconFrames().then(({ json }) => {
-            json.forEach((frame) => {
-                cachedIconFrames.set(frame.id, frame);
-            });
-        });
-        cosmeticsRequest.getNameplateEffects().then(({ json }) => {
-            json.forEach((effect) => {
-                cachedNameplateEffects.set(effect.id, effect);
-            });
-        });
-    }
-
     return {
         state,
 
@@ -1056,35 +659,20 @@ export const useUserStore = defineStore('User', () => {
         userDialog,
         editProfileDialog,
         subsetOfLanguages,
-        sendBoopDialog,
         showUserDialogHistory,
         customUserTags,
         cachedUsers,
         cachedProfiles,
         cachedUserIdsByDisplayName,
-        isLocalUserVrcPlusSupporter,
-        cachedProfileEffects,
-        cachedIconFrames,
-        cachedNameplateEffects,
-        cachedPurchases,
-        ownedListingIds,
-        ownedProductIds,
-        currentUserClientConfig,
         applyUserLanguage,
         applyPresenceLocation,
         applyUserDialogLocation,
         setCachedUser,
-        setCachedPurchases,
-        getAllProductPurchases,
         syncCachedUserDisplayName,
         deleteCachedUser,
         deleteCachedProfile,
         clearCachedUsers,
         rebuildCachedUserDisplayNameIndex,
-        sortUserDialogAvatars,
-        sortUserDialogLicensedAvatars,
-        initUserNotes,
-        showSendBoopDialog,
         showEditProfileDialog,
         setUserDialogMemo,
         setUserDialogVisible,
@@ -1096,15 +684,6 @@ export const useUserStore = defineStore('User', () => {
         setSubsetOfLanguages,
         setCurrentUserCredits,
         markCurrentUserGameStarted,
-        markCurrentUserGameStopped,
-        checkNote,
-        toggleSharedConnectionsOptOut,
-        toggleDiscordFriendsOptOut,
-        toggleAllowBooping,
-        toggleReducedProfileAnimations,
-        toggleAvatarCopying,
-        changePassword,
-        changeContentFilterSettings,
-        getCosmetics
+        markCurrentUserGameStopped
     };
 });

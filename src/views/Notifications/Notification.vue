@@ -31,7 +31,6 @@
                                         'friendRequest',
                                         'ignoredFriendRequest',
                                         'message',
-                                        'boop',
                                         'event.announcement',
                                         'groupChange',
                                         'group.announcement',
@@ -79,12 +78,6 @@
                 </div>
             </template>
         </DataTableLayout>
-        <SendInviteResponseDialog
-            v-model:send-invite-response-dialog="sendInviteResponseDialog"
-            v-model:sendInviteResponseDialogVisible="sendInviteResponseDialogVisible" />
-        <SendInviteRequestResponseDialog
-            v-model:send-invite-response-dialog="sendInviteResponseDialog"
-            v-model:sendInviteRequestResponseDialogVisible="sendInviteRequestResponseDialogVisible" />
     </div>
 </template>
 
@@ -100,24 +93,14 @@
 
     import dayjs from 'dayjs';
 
-    import {
-        useAppearanceSettingsStore,
-        useGalleryStore,
-        useInviteStore,
-        useNotificationStore,
-        useVrcxStore
-    } from '../../stores';
+    import { useAppearanceSettingsStore, useGalleryStore, useNotificationStore, useVrcxStore } from '../../stores';
     import { DataTableLayout } from '../../components/ui/data-table';
     import { convertFileUrlToImageUrl } from '../../shared/utils';
     import { createColumns } from './columns.jsx';
     import { useVrcxVueTable } from '../../lib/table/useVrcxVueTable';
 
-    import SendInviteRequestResponseDialog from './dialogs/SendInviteRequestResponseDialog.vue';
-    import SendInviteResponseDialog from './dialogs/SendInviteResponseDialog.vue';
     import configRepository from '../../services/config';
 
-    const { refreshInviteMessageTableData } = useInviteStore();
-    const { clearInviteImageUpload } = useGalleryStore();
     const { notificationTable, isNotificationsLoading } = storeToRefs(useNotificationStore());
     const {
         refreshNotifications,
@@ -217,8 +200,6 @@
         showFullscreenImageDialog,
         getSmallThumbnailUrl,
         acceptFriendRequestNotification,
-        showSendInviteResponseDialog,
-        showSendInviteRequestResponseDialog,
         acceptRequestInvite,
         sendNotificationResponse,
         hideNotification,
@@ -260,15 +241,6 @@
         };
     };
 
-    const sendInviteResponseDialog = ref({
-        messageSlot: {},
-        invite: {}
-    });
-
-    const sendInviteResponseDialogVisible = ref(false);
-
-    const sendInviteRequestResponseDialogVisible = ref(false);
-
     function saveTableFilters() {
         configRepository.setString(
             'VRCX_notificationTableFilters',
@@ -289,28 +261,6 @@
      */
     function getSmallThumbnailUrl(url) {
         return convertFileUrlToImageUrl(url);
-    }
-
-    /**
-     * @param invite
-     */
-    function showSendInviteResponseDialog(invite) {
-        sendInviteResponseDialog.value.invite = invite;
-        sendInviteResponseDialog.value.messageSlot = {};
-        refreshInviteMessageTableData('response');
-        clearInviteImageUpload();
-        sendInviteResponseDialogVisible.value = true;
-    }
-
-    /**
-     * @param invite
-     */
-    function showSendInviteRequestResponseDialog(invite) {
-        sendInviteResponseDialog.value.invite = invite;
-        sendInviteResponseDialog.value.messageSlot = {};
-        refreshInviteMessageTableData('requestResponse');
-        clearInviteImageUpload();
-        sendInviteRequestResponseDialogVisible.value = true;
     }
 
     onMounted(() => {

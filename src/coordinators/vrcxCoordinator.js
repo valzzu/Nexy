@@ -1,9 +1,5 @@
-import { removeAvatarFromCache } from './avatarCoordinator';
 import { removeWorldFromCache } from './worldCoordinator';
-import { useAvatarStore } from '../stores/avatar';
-import { useFavoriteStore } from '../stores/favorite';
 import { useFriendStore } from '../stores/friend';
-import { useGalleryStore } from '../stores/gallery';
 import { useGroupStore } from '../stores/group';
 import { useInstanceStore } from '../stores/instance';
 import { useLocationStore } from '../stores/location';
@@ -13,18 +9,15 @@ import { failedGetRequests } from '../services/request';
 
 /**
  * Clears caches across multiple stores while preserving data that is
- * still needed (friends, current user, favorites, active instances).
+ * still needed (friends, current user, active instances).
  */
 export function clearVRCXCache() {
     const userStore = useUserStore();
     const worldStore = useWorldStore();
-    const avatarStore = useAvatarStore();
     const groupStore = useGroupStore();
     const instanceStore = useInstanceStore();
     const friendStore = useFriendStore();
-    const favoriteStore = useFavoriteStore();
     const locationStore = useLocationStore();
-    const galleryStore = useGalleryStore();
 
     console.log('Clearing VRCX cache...');
     failedGetRequests.clear();
@@ -47,22 +40,8 @@ export function clearVRCXCache() {
         }
     });
     worldStore.cachedWorlds.forEach((ref, id) => {
-        if (
-            !favoriteStore.getCachedFavoritesByObjectId(id) &&
-            ref.authorId !== userStore.currentUser.id &&
-            !favoriteStore.localWorldFavoritesList.includes(id)
-        ) {
+        if (ref.authorId !== userStore.currentUser.id) {
             removeWorldFromCache(id);
-        }
-    });
-    avatarStore.cachedAvatars.forEach((ref, id) => {
-        if (
-            !favoriteStore.getCachedFavoritesByObjectId(id) &&
-            ref.authorId !== userStore.currentUser.id &&
-            !favoriteStore.localAvatarFavoritesList.includes(id) &&
-            !avatarStore.avatarHistory.includes(id)
-        ) {
-            removeAvatarFromCache(id);
         }
     });
     groupStore.cachedGroups.forEach((ref, id) => {
@@ -79,7 +58,5 @@ export function clearVRCXCache() {
             instanceStore.cachedInstances.delete(id);
         }
     });
-    avatarStore.cachedAvatarNames.clear();
     userStore.customUserTags.clear();
-    galleryStore.cachedEmoji.clear();
 }

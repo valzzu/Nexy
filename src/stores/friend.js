@@ -20,7 +20,6 @@ import { AppDebug } from '../services/appConfig';
 import { database } from '../services/database';
 import { useAppearanceSettingsStore } from './settings/appearance';
 import { useFavoriteStore } from './favorite';
-import { useGeneralSettingsStore } from './settings/general';
 import { useGroupStore } from './group';
 import { useLocationStore } from './location';
 import { useUserStore } from './user';
@@ -33,7 +32,6 @@ import * as workerTimers from 'worker-timers';
 
 export const useFriendStore = defineStore('Friend', () => {
     const appearanceSettingsStore = useAppearanceSettingsStore();
-    const generalSettingsStore = useGeneralSettingsStore();
     const userStore = useUserStore();
     const groupStore = useGroupStore();
     const locationStore = useLocationStore();
@@ -110,19 +108,8 @@ export const useFriendStore = defineStore('Friend', () => {
 
     const allFavoriteFriendIds = computed(() => {
         const favoriteStore = useFavoriteStore();
-        const groups = generalSettingsStore.localFavoriteFriendsGroups;
         const set = new Set();
-        for (const ref of favoriteStore.cachedFavorites.values()) {
-            if (ref.type === 'friend' && (groups.length === 0 || groups.includes(ref.$groupKey))) {
-                set.add(ref.favoriteId);
-            }
-        }
-        let localGroups = groups.filter((key) => key.startsWith('local:')).map((key) => key.replace('local:', ''));
-        if (groups.length === 0) {
-            // Use all groups when no groups are selected
-            localGroups = Object.keys(favoriteStore.localFriendFavorites);
-        }
-        for (const groupName of localGroups) {
+        for (const groupName of Object.keys(favoriteStore.localFriendFavorites)) {
             const userIds = favoriteStore.localFriendFavorites[groupName];
             if (userIds) {
                 for (const id of userIds) {
@@ -644,13 +631,9 @@ export const useFriendStore = defineStore('Friend', () => {
         for (let i = 0; i < friendsArray.length; i++) {
             const friend = friendsArray[i];
             try {
-                // we don't update friend state here, it's not reliable
-                let state_input = 'offline';
-                if (friend.platform === 'web') {
-                    state_input = 'active';
-                } else if (friend.platform) {
-                    state_input = 'online';
-                }
+                // NexVR friend entries carry no platform; their state comes
+                // straight from the realtime presence, so it can be trusted
+                const state_input = friend.state || 'offline';
                 const ref = friends.get(friend.id);
                 if (ref?.state !== state_input) {
                     if (AppDebug.debugFriendState) {

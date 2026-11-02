@@ -1,7 +1,6 @@
 import type {
     GetNotifications,
     InviteRequest,
-    InviteResponse,
     Notification,
     NotificationV2,
     RequestInviteRequest,
@@ -11,7 +10,6 @@ import type {
 } from 'vrchat';
 import type { Json } from '../types/vrcx';
 import { request } from '../services/request';
-import { useGalleryStore } from '../stores';
 
 const notificationReq = {
     getNotifications(
@@ -86,28 +84,6 @@ const notificationReq = {
             return args;
         });
     },
-    sendInvitePhoto(
-        params: InviteRequest & { worldId?: string; worldName?: string; rsvp?: boolean },
-        receiverUserId: string
-    ): Promise<{
-        json: Json<SentNotification>;
-        params: InviteRequest & { worldId?: string; worldName?: string; rsvp?: boolean };
-        receiverUserId: string;
-    }> {
-        return request(`invite/${receiverUserId}/photo`, {
-            uploadImageLegacy: true,
-            postData: JSON.stringify(params),
-            imageData: useGalleryStore().uploadImage
-        }).then((json) => {
-            const args = {
-                json,
-                params,
-                receiverUserId
-            };
-            return args;
-        });
-    },
-
     sendRequestInvite(
         params: RequestInviteRequest & { platform?: string },
         receiverUserId: string
@@ -124,64 +100,6 @@ const notificationReq = {
                 json,
                 params,
                 receiverUserId
-            };
-            return args;
-        });
-    },
-
-    sendRequestInvitePhoto(
-        params: RequestInviteRequest & { platform?: string },
-        receiverUserId: string
-    ): Promise<{
-        json: Json<Notification>;
-        params: RequestInviteRequest & { platform?: string };
-        receiverUserId: string;
-    }> {
-        return request(`requestInvite/${receiverUserId}/photo`, {
-            uploadImageLegacy: true,
-            postData: JSON.stringify(params),
-            imageData: useGalleryStore().uploadImage
-        }).then((json) => {
-            const args = {
-                json,
-                params,
-                receiverUserId
-            };
-            return args;
-        });
-    },
-
-    sendInviteResponse(
-        params: InviteResponse,
-        inviteId: string
-    ): Promise<{ json: Json<Notification>; params: InviteResponse; inviteId: string }> {
-        return request(`invite/${inviteId}/response`, {
-            method: 'POST',
-            params
-        }).then((json) => {
-            const args = {
-                json,
-                params,
-                inviteId
-            };
-            return args;
-        });
-    },
-
-    sendInviteResponsePhoto(
-        params: InviteResponse,
-        inviteId: string
-    ): Promise<{ json: Json<Notification>; params: InviteResponse; inviteId: string }> {
-        return request(`invite/${inviteId}/response/photo`, {
-            uploadImageLegacy: true,
-            postData: JSON.stringify(params),
-            imageData: useGalleryStore().uploadImage,
-            inviteId
-        }).then((json) => {
-            const args = {
-                json,
-                params,
-                inviteId
             };
             return args;
         });
