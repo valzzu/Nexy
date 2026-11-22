@@ -8,6 +8,7 @@ import { storeToRefs } from 'pinia';
 
 import { formatDateFilter } from '../../shared/utils';
 import { checkCanInvite } from '../../shared/utils/invite';
+import { canDeclineNotification } from '../../shared/utils/notificationCategory';
 import { i18n } from '../../plugins';
 import {
     useGameStore,
@@ -147,7 +148,7 @@ export const createColumns = ({
             cell: ({ row }) => {
                 const original = row.original;
                 const typeKey = `view.notification.filters.${original.type}`;
-                const label = te(typeKey) ? t(typeKey) : original.type;
+                const label = te(typeKey) || te(typeKey, 'en') ? t(typeKey) : original.type;
 
                 if (original.type === 'invite') {
                     return (
@@ -314,7 +315,12 @@ export const createColumns = ({
 
                 if (original.details?.groupName) {
                     return (
-                        <span class="table-user-text block w-full min-w-0 truncate">{original.details.groupName}</span>
+                        <span
+                            class={`table-user-text block w-full min-w-0 truncate ${original.details.groupId ? 'cursor-pointer' : ''}`}
+                            onClick={() => original.details.groupId && showGroupDialog(original.details.groupId)}
+                        >
+                            {original.details.groupName}
+                        </span>
                     );
                 }
 
@@ -449,6 +455,20 @@ export const createColumns = ({
                                 <span class="block w-full min-w-0 truncate">{original.details.responseMessage}</span>
                             </TooltipWrapper>
                         ) : null}
+                        {(original.type === 'message' || original.type === 'requestInvite') &&
+                        !original.message &&
+                        !original.title &&
+                        !original.details?.inviteMessage &&
+                        !original.details?.requestMessage &&
+                        !original.details?.responseMessage ? (
+                            <span class="text-muted-foreground">
+                                {t(
+                                    original.type === 'message'
+                                        ? 'view.notification.message_unavailable'
+                                        : 'view.notification.nexvr.inviteRequest'
+                                )}
+                            </span>
+                        ) : null}
                     </div>
                 );
             }
@@ -467,21 +487,13 @@ export const createColumns = ({
             cell: ({ row }) => {
                 const original = row.original;
                 const hasResponses = Array.isArray(original.responses);
-                const showDecline =
-                    original.type !== 'requestInviteResponse' &&
-                    original.type !== 'inviteResponse' &&
-                    original.type !== 'message' &&
-                    original.type !== 'boop' &&
-                    original.type !== 'groupChange' &&
-                    !original.type?.includes('group.') &&
-                    !original.type?.includes('moderation.') &&
-                    !original.type?.includes('instance.') &&
-                    !original.link?.startsWith('economy.');
+                const showDecline = canDeclineNotification(original);
                 const showDeleteLog = original.type !== 'friendRequest' && original.type !== 'ignoredFriendRequest';
 
                 return (
                     <div class="flex items-center justify-end gap-2">
-                        {original.senderUserId !== currentUser.value?.id && !isNotificationExpired(original) ? (
+                        {(original.senderUserId !== currentUser.value?.id || (original.$nexvrType && hasResponses)) &&
+                        !isNotificationExpired(original) ? (
                             <span class="inline-flex items-center gap-2">
                                 {original.type === 'friendRequest' ? (
                                     <Tooltip>

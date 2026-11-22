@@ -3,6 +3,8 @@
 // shim. Keep these pure: no stores, no requests.
 
 import { NotificationType, PresenceStatus, SocialRank } from './realtimeSchema';
+import { nexvrNotificationText as text } from './notificationText';
+import { i18n } from '../../plugins/i18n';
 
 const PRESENCE_STATUS = {
     [PresenceStatus.ONLINE]: 'active',
@@ -798,19 +800,128 @@ const NOTIFICATION_TYPES = {
     [NotificationType.FRIEND_REQUEST]: 'friendRequest',
     [NotificationType.INVITE_RESPONSE]: 'inviteResponse',
     [NotificationType.INVITE_REQUEST]: 'requestInvite',
-    [NotificationType.FRIEND_REQUEST_RESPONSE]: 'message',
-    [NotificationType.GROUP_INVITE]: 'message',
-    [NotificationType.GROUP_JOIN_REQUEST]: 'message',
-    [NotificationType.GROUP_JOIN_REQUEST_RESPONSE]: 'message',
-    [NotificationType.COALITION_INVITE]: 'message',
-    [NotificationType.COALITION_INVITE_RESPONSE]: 'message',
-    [NotificationType.CALENDAR_EVENT_RSVP]: 'message',
-    [NotificationType.CALENDAR_EVENT_UPDATED]: 'message',
-    [NotificationType.CALENDAR_EVENT_CANCELLED]: 'message',
-    [NotificationType.INSTANCE_WARNING]: 'message',
-    [NotificationType.MODERATION_NOTICE]: 'message',
-    [NotificationType.CASHOUT_RESOLVED]: 'message'
+    [NotificationType.FRIEND_REQUEST_RESPONSE]: 'friendRequestResponse',
+    [NotificationType.GROUP_INVITE]: 'group.invite',
+    [NotificationType.GROUP_JOIN_REQUEST]: 'group.joinRequest',
+    [NotificationType.GROUP_JOIN_REQUEST_RESPONSE]: 'groupJoinRequestResponse',
+    [NotificationType.COALITION_INVITE]: 'coalitionInvite',
+    [NotificationType.COALITION_INVITE_RESPONSE]: 'coalitionInviteResponse',
+    [NotificationType.CALENDAR_EVENT_RSVP]: 'calendarEventRsvp',
+    [NotificationType.CALENDAR_EVENT_UPDATED]: 'calendarEventUpdated',
+    [NotificationType.CALENDAR_EVENT_CANCELLED]: 'calendarEventCancelled',
+    [NotificationType.INSTANCE_WARNING]: 'instanceWarning',
+    [NotificationType.MODERATION_NOTICE]: 'moderationNotice',
+    [NotificationType.CASHOUT_RESOLVED]: 'cashoutResolved',
+    [NotificationType.GIFT_RECEIVED]: 'giftReceived',
+    [NotificationType.GIFT_RETURNED]: 'giftReturned',
+    [NotificationType.GIFT_REVOKED]: 'giftRevoked',
+    [NotificationType.GROUP_WARNING]: 'groupWarning'
 };
+
+/**
+ * @param {any} kind NexVR moderation notice oneof
+ */
+function describeModerationNotice(kind) {
+    const notice = kind?.value;
+    const reason = notice?.reason ? ` ${text('moderationReason', { reason: notice.reason })}` : '';
+    switch (kind?.case) {
+        case 'suspension': {
+            const target =
+                notice.targetLabel ||
+                (notice.targetType && notice.targetType !== 'user' ? notice.targetType : text('suspensionAccount'));
+            const description = notice.expiresAt
+                ? text('suspendedUntil', { target, date: notice.expiresAt })
+                : text('suspended', { target });
+            return description + reason;
+        }
+        case 'contentRemoved':
+            return (
+                text('contentRemoved', { target: notice.targetName || notice.targetType || text('removedContent') }) +
+                reason
+            );
+        case 'profileModerated':
+            return notice.fields?.length
+                ? text('profileChangedFields', { fields: notice.fields.join(', ') })
+                : text('profileChanged');
+        case 'listingRemoved':
+            return [
+                (notice.listingTitle
+                    ? text('listingRemovedNamed', { name: notice.listingTitle })
+                    : text('listingRemoved')) + reason,
+                notice.refundedPurchases > 0 ? text('purchasesRefunded', { count: notice.refundedPurchases }) : ''
+            ]
+                .filter(Boolean)
+                .join(' ');
+        case 'appealResolved':
+            return [text(notice.outcome === 'reversed' ? 'appealAccepted' : 'appealReviewed'), notice.resolutionNote]
+                .filter(Boolean)
+                .join(' ');
+        default:
+            return text('moderationNotice');
+    }
+}
+
+/**
+ * @param {any} payload NexVR notification payload (protobuf oneof)
+ * @returns {string} Text for notifications without legacy title or message
+ */
+function describeNotificationPayload(payload) {
+    const details = payload?.value;
+    switch (payload?.case) {
+        case 'invite':
+        case 'inviteRequest':
+        case 'inviteResponse':
+        case 'friendRequest':
+        case 'groupInvite':
+        case 'groupJoinRequest':
+        case 'giftReturned':
+            return text(payload.case);
+        case 'friendRequestResponse':
+            return text(details.accepted ? 'friendAccepted' : 'friendDeclined');
+        case 'groupJoinRequestResponse':
+            return text(details.approved ? 'groupJoinApproved' : 'groupJoinDeclined');
+        case 'coalitionInvite':
+            return details.coalitionName
+                ? text('coalitionInviteNamed', { name: details.coalitionName })
+                : text('coalitionInvite');
+        case 'coalitionInviteResponse':
+            return text(details.accepted ? 'coalitionAccepted' : 'coalitionDeclined');
+        case 'calendarEventRsvp':
+        case 'calendarEventUpdated':
+        case 'calendarEventCancelled': {
+            const event = details.eventTitle ? `“${details.eventTitle}”` : text('calendarEvent');
+            return payload.case === 'calendarEventRsvp' && details.rsvpStatus
+                ? text('calendarEventRsvpStatus', { event, status: details.rsvpStatus })
+                : text(payload.case, { event });
+        }
+        case 'instanceWarning':
+        case 'groupWarning':
+            return details.text || text(payload.case);
+        case 'moderationNotice':
+            return describeModerationNotice(details.kind);
+        case 'cashoutResolved': {
+            let outcome = 'cashoutChanged';
+            if (details.outcome === 'paid') outcome = 'cashoutPaid';
+            if (details.outcome === 'rejected') outcome = 'cashoutDeclined';
+            if (details.outcome === 'failed') outcome = 'cashoutFailed';
+            return [text(outcome), details.note].filter(Boolean).join(' ');
+        }
+        case 'giftReceived': {
+            const plan = details.tierName || details.tierId;
+            if (!plan) return text('giftReceived');
+            return details.months
+                ? text('giftReceivedTerm', { plan, count: details.months })
+                : text('giftReceivedPlan', { plan });
+        }
+        case 'giftRevoked': {
+            const plan = details.tierName || details.tierId;
+            const outcome = details.queuedStart ? 'giftCancelled' : 'giftEnded';
+            return plan ? text(`${outcome}Plan`, { plan }) : text(outcome);
+        }
+        default:
+            return '';
+    }
+}
 
 /**
  * @param {any} notification Notification from the realtime socket
@@ -819,25 +930,68 @@ const NOTIFICATION_TYPES = {
 export function toNexVRNotification(notification) {
     const data = { ...(notification.data || {}) };
     const details = { ...data };
+    const payload = notification.payload;
+    const typedDetails = payload?.value;
+    const moderationTarget = payload?.case === 'moderationNotice' ? typedDetails?.kind?.value : undefined;
+    const moderationGroupId = moderationTarget?.targetType === 'group' ? moderationTarget.targetId : '';
+    const groupId =
+        typedDetails?.groupId ||
+        typedDetails?.targetGroupId ||
+        (typedDetails?.ownerType === 'group' ? typedDetails.ownerId : '') ||
+        moderationGroupId;
+    if (groupId) {
+        details.groupId = groupId;
+    }
     const worldId = data.worldId || data.world;
-    const instanceId = data.instanceId || data.instance || data.toInstance;
+    const instanceId = typedDetails?.instanceId || data.instanceId || data.instance || data.toInstance;
+    if (payload?.case === 'invite' && instanceId) {
+        details.instanceId = instanceId;
+    }
     if (worldId && instanceId) {
         details.worldId = makeLocation(worldId, instanceId);
         details.worldName = data.worldName || data.instanceName || '';
     }
-    const message = [notification.title, notification.message].filter(Boolean).join(': ');
-    return {
+    const legacyMessage = [notification.title, notification.message]
+        .map((part) => part?.trim())
+        .filter(Boolean)
+        .join(': ');
+    const mapped = {
         id: notification.id,
-        type: NOTIFICATION_TYPES[notification.type] || 'message',
-        senderUserId: notification.from,
+        type:
+            notification.type === NotificationType.MODERATION_NOTICE && details.groupId
+                ? 'groupModerationNotice'
+                : NOTIFICATION_TYPES[notification.type] || 'message',
+        senderUserId: notification.from || typedDetails?.userId,
         senderUsername: data.fromDisplayName || data.displayName || data.fromUsername || '',
         receiverUserId: notification.to,
-        message,
+        message: legacyMessage || describeNotificationPayload(payload),
         details,
         seen: false,
         created_at: notification.createdAt || new Date().toISOString(),
         $nexvrType: notification.type
     };
+    const { t } = i18n.global;
+    const responses = [];
+    if (payload?.case === 'groupInvite' && payload.value.groupId) {
+        responses.push(
+            { type: 'nexvr.accept', icon: 'check', text: t('view.notification.actions.accept'), data: '' },
+            { type: 'nexvr.decline', icon: 'cancel', text: t('view.notification.actions.decline'), data: '' }
+        );
+    } else if (payload?.case === 'groupJoinRequest' && payload.value.groupId && mapped.senderUserId) {
+        responses.push(
+            { type: 'nexvr.accept', icon: 'check', text: text('approve'), data: '' },
+            { type: 'nexvr.decline', icon: 'cancel', text: t('view.notification.actions.decline'), data: '' }
+        );
+    }
+    if (payload?.case && mapped.type !== 'message' && notification.type >= NotificationType.FRIEND_REQUEST_RESPONSE) {
+        responses.push({
+            type: 'nexvr.dismiss',
+            icon: 'bell-slash',
+            text: text('dismiss'),
+            data: ''
+        });
+    }
+    return responses.length ? { ...mapped, responses } : mapped;
 }
 
 /**

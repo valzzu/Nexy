@@ -1,4 +1,5 @@
 import configRepository from '../config';
+import { advanceTokenSession, assertTokenSession, getTokenSession } from './tokenSession';
 
 const STORAGE_KEY = 'NexVR_session';
 
@@ -9,7 +10,7 @@ const STORAGE_KEY = 'NexVR_session';
 /** @type {NexvrTokens | null} */
 let tokens = null;
 let loaded = false;
-/** @type {Promise<boolean> | null} */
+/** @type {{ session: number; promise: Promise<boolean> } | null} */
 let refreshing = null;
 
 /**
@@ -20,10 +21,11 @@ let refreshing = null;
  */
 async function load() {
     if (!loaded) {
+        const session = getTokenSession();
         loaded = true;
         try {
             const raw = await configRepository.getString(STORAGE_KEY, '');
-            if (raw) {
+            if (raw && session === getTokenSession()) {
                 tokens = JSON.parse(raw);
             }
         } catch (err) {
@@ -57,6 +59,13 @@ export async function getAccessToken() {
  * @param {NexvrTokens | null} next
  */
 export async function setTokens(next) {
+    const saved = updateTokens(next);
+    advanceTokenSession();
+    await saved;
+}
+
+/** @param {NexvrTokens | null} next */
+async function updateTokens(next) {
     loaded = true;
     tokens = next?.accessToken ? { accessToken: next.accessToken, refreshToken: next.refreshToken } : null;
     await persist();
@@ -96,15 +105,17 @@ export async function restoreTokens(blob) {
  *
  * @param {(refreshToken: string) => Promise<NexvrTokens | null>} exchange
  * @param {string} [staleToken] Access token the rejected request was sent with
+ * @param {number} [session] Token session captured before the rejected request
  * @returns {Promise<boolean>} True when a new access token is in place
  */
-export async function refreshTokens(exchange, staleToken) {
+export async function refreshTokens(exchange, staleToken, session = getTokenSession()) {
     await load();
+    assertTokenSession(session);
     if (staleToken !== undefined && tokens?.accessToken && tokens.accessToken !== staleToken) {
         return true;
     }
-    if (!refreshing) {
-        refreshing = (async () => {
+    if (refreshing?.session !== session) {
+        const promise = (async () => {
             const refreshToken = tokens?.refreshToken;
             if (!refreshToken) {
                 return false;
@@ -119,15 +130,17 @@ export async function refreshTokens(exchange, staleToken) {
                     return false;
                 }
             }
+            assertTokenSession(session);
             if (!next?.accessToken) {
-                await clearTokens();
+                await updateTokens(null);
                 return false;
             }
-            await setTokens(next);
+            await updateTokens(next);
             return true;
         })().finally(() => {
-            refreshing = null;
+            if (refreshing?.promise === promise) refreshing = null;
         });
+        refreshing = { session, promise };
     }
-    return refreshing;
+    return refreshing.promise;
 }

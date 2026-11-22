@@ -10,10 +10,16 @@ vi.mock('../../config', () => ({
     }
 }));
 
+import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import { handleShimRequest } from '../shim';
-import { NotificationType, PresenceStatus } from '../realtimeSchema';
+import { NotificationSchema, NotificationType, PresenceStatus, ServerMessageSchema } from '../realtimeSchema';
 import { realtime } from '../realtime';
+import { getAccessToken, setTokens } from '../session';
 import { watchState } from '../../watchState';
+import { i18n } from '../../../plugins/i18n';
+import en from '../../../localization/en.json';
+
+beforeAll(() => i18n.global.setLocaleMessage('en', en));
 
 const avatar = (id, publicity, versions = []) => ({
     id,
@@ -45,9 +51,18 @@ const responses = {
     '/avatars/a1': avatar('a1', 'public'),
     '/worlds/': [{ _id: 'w1', name: 'Club', owner: 'me', visibility: 'public', stats: {} }],
     '/worlds/w1': { _id: 'w1', name: 'Club', owner: 'me', images: { primary: 'https://cdn/w1.png' } },
+    '/instances/123': { _id: '123', world: { _id: 'w1', name: 'Club', images: { primary: 'https://cdn/w1.png' } } },
     '/users/stranger': { id: 'stranger', displayName: 'Stranger', profileImageUrl: 'https://cdn/stranger.png' },
-    '/groups/g1': { id: 'g1', name: 'Crew', iconUrl: 'https://cdn/g1.png' }
+    '/groups/g1': { id: 'g1', name: 'Crew', iconUrl: 'https://cdn/g1.png' },
+    '/groups/g1/membership': { status: 'invited' }
 };
+
+const groupActions = new Set([
+    '/groups/g1/accept',
+    '/groups/g1/leave',
+    '/groups/g1/members/stranger/approve',
+    '/groups/g1/members/stranger/decline'
+]);
 
 /** @type {string[]} */
 let requested = [];
@@ -70,6 +85,9 @@ const native = async ({ url, method, body }) => {
     }
     if (path in responses) {
         return { status: 200, data: JSON.stringify(responses[path]) };
+    }
+    if ((method === 'POST' && groupActions.has(path)) || (method === 'DELETE' && path === '/notifications/group')) {
+        return { status: 204, data: '' };
     }
     return { status: 404, data: JSON.stringify({ message: 'Not found' }) };
 };
@@ -182,6 +200,23 @@ describe('NexVR notifications', () => {
         createdAt: '2026-11-01T00:00:00Z'
     });
 
+    const typed = (id, type, kind, value) => ({
+        ...notification(id, type, 'friend'),
+        payload: { case: kind, value }
+    });
+
+    async function respond(id, responseType, execute = native) {
+        const result = await handleShimRequest(
+            {
+                url: `https://nexvr.net/api/notifications/${id}/respond`,
+                method: 'POST',
+                body: JSON.stringify({ responseType, responseData: 'untrusted' })
+            },
+            execute
+        );
+        return { status: result.status, json: JSON.parse(result.data) };
+    }
+
     afterEach(() => {
         realtime.notifications = [];
         onRequest = null;
@@ -196,6 +231,159 @@ describe('NexVR notifications', () => {
             senderUserIcon: 'https://cdn/stranger.png'
         });
     });
+
+    test('the current NexVR wire format supplies readable requests and responses to the notification list', async () => {
+        // Encoded with the NexVR web descriptor, independent of Nexy's decoder.
+        const wire = Buffer.from(
+            'EoMCCgJtZSL8AQoxCgdyZXF1ZXN0GgJtZSACQhQyMDI2LTExLTAxVDAwOjAwOjAwWloKCghzdHJhbmdlcgoyCghhY2NlcHRlZBoCbWUgBUIUMjAyNi0xMS0wMVQwMDowMDowMFpyCgoGZnJpZW5kEAEKMAoIZGVjbGluZWQaAm1lIAVCFDIwMjYtMTEtMDFUMDA6MDA6MDBacggKBmZyaWVuZAosCgRqb2luGgJtZSAEQhQyMDI2LTExLTAxVDAwOjAwOjAwWmoICgZmcmllbmQKMwoGaW52aXRlGgJtZSABQhQyMDI2LTExLTAxVDAwOjAwOjAwWlINCgZmcmllbmQSAzEyMw==',
+            'base64'
+        );
+        realtime.handleServerMessage(fromBinary(ServerMessageSchema, wire));
+
+        const { json } = await get('auth/user/notifications?n=100&offset=0');
+        expect(json).toMatchObject([
+            {
+                id: 'request',
+                type: 'friendRequest',
+                senderUserId: 'stranger',
+                senderUsername: 'Stranger',
+                message: 'Sent you a friend request.'
+            },
+            { id: 'accepted', type: 'friendRequestResponse', message: 'Accepted your friend request.' },
+            { id: 'declined', type: 'friendRequestResponse', message: 'Declined your friend request.' },
+            { id: 'join', type: 'requestInvite', message: 'Requested an invite to your instance.' },
+            { id: 'invite', type: 'invite', details: { worldId: 'w1:123', worldName: 'Club' } }
+        ]);
+    });
+
+    test('a legacy wire notification keeps its server text when decoded', async () => {
+        const legacyWire = toBinary(
+            NotificationSchema,
+            create(NotificationSchema, {
+                ...notification('old', NotificationType.INVITE_REQUEST, 'friend'),
+                title: 'Invite request',
+                message: 'Can I join?'
+            })
+        );
+        realtime.notifications = [fromBinary(NotificationSchema, legacyWire)];
+
+        const { json } = await get('auth/user/notifications?n=100&offset=0');
+        expect(json[0]).toMatchObject({ type: 'requestInvite', message: 'Invite request: Can I join?' });
+    });
+
+    test('dedicated notification types preserve event, moderation, and gift details', async () => {
+        realtime.notifications = [
+            typed('event', NotificationType.CALENDAR_EVENT_UPDATED, 'calendarEventUpdated', {
+                eventTitle: 'Game Night'
+            }),
+            typed('notice', NotificationType.MODERATION_NOTICE, 'moderationNotice', {
+                kind: { case: 'contentRemoved', value: { targetName: 'Example avatar', reason: 'Test reason' } }
+            }),
+            typed('group-notice', NotificationType.MODERATION_NOTICE, 'moderationNotice', {
+                kind: { case: 'suspension', value: { targetType: 'group', targetId: 'g1' } }
+            }),
+            typed('gift', NotificationType.GIFT_RECEIVED, 'giftReceived', { tierName: 'Plus', months: 3 }),
+            typed('cashout', NotificationType.CASHOUT_RESOLVED, 'cashoutResolved', {
+                outcome: 'paid',
+                note: 'Payment sent'
+            })
+        ];
+        const { json } = await get('auth/user/notifications');
+        expect(json).toMatchObject([
+            { type: 'calendarEventUpdated', message: 'Updated “Game Night”.' },
+            { type: 'moderationNotice', message: 'Moderators removed your Example avatar. Reason: Test reason' },
+            { type: 'groupModerationNotice', details: { groupId: 'g1' } },
+            { type: 'giftReceived', message: 'Sent you a gift of Plus (3 months).' },
+            { type: 'cashoutResolved', message: 'Your cashout was paid. Payment sent' }
+        ]);
+    });
+
+    test.each([
+        ['groupInvite', 'nexvr.accept', '/groups/g1/accept'],
+        ['groupInvite', 'nexvr.decline', '/groups/g1/leave'],
+        ['groupJoinRequest', 'nexvr.accept', '/groups/g1/members/stranger/approve'],
+        ['groupJoinRequest', 'nexvr.decline', '/groups/g1/members/stranger/decline'],
+        ['groupJoinRequest', 'nexvr.dismiss', '/notifications/group']
+    ])('%s handles %s using the active realtime payload', async (kind, action, path) => {
+        const type = kind === 'groupInvite' ? NotificationType.GROUP_INVITE : NotificationType.GROUP_JOIN_REQUEST;
+        realtime.notifications = [typed('group', type, kind, { groupId: 'g1', userId: 'stranger' })];
+        const { json } = await get('auth/user/notifications');
+        expect(json[0]).toMatchObject({
+            type: kind === 'groupInvite' ? 'group.invite' : 'group.joinRequest',
+            details: { groupId: 'g1', groupName: 'Crew' },
+            responses: expect.arrayContaining([expect.objectContaining({ type: action })])
+        });
+        requested = [];
+        expect((await respond('group', action)).status).toBe(200);
+        expect(requested).toEqual(path.endsWith('/leave') ? ['/groups/g1/membership', path] : [path]);
+    });
+
+    test('declining an old invitation cannot leave a group the user already joined', async () => {
+        realtime.notifications = [typed('group', NotificationType.GROUP_INVITE, 'groupInvite', { groupId: 'g1' })];
+        const execute = vi.fn(async () => ({ status: 200, data: JSON.stringify({ status: 'active' }) }));
+        expect((await respond('group', 'nexvr.decline', execute)).status).toBe(409);
+        expect(execute).toHaveBeenCalledTimes(1);
+        expect(execute.mock.calls[0][0]).toMatchObject({
+            method: 'GET',
+            url: 'https://nexvr.net/api/groups/g1/membership'
+        });
+    });
+
+    test('a response for another account is rejected without changing group membership', async () => {
+        realtime.notifications = [
+            {
+                ...typed('group', NotificationType.GROUP_INVITE, 'groupInvite', { groupId: 'g1' }),
+                to: 'different-user'
+            }
+        ];
+        expect((await respond('group', 'nexvr.accept')).status).toBe(404);
+        expect(requested).toEqual([]);
+    });
+
+    test.each(['before refresh', 'during refresh', 'same session'])(
+        'group action 401 recovery: %s',
+        async (scenario) => {
+            const first = { accessToken: 'access', refreshToken: 'refresh' };
+            const second = { accessToken: 'new-account', refreshToken: 'new-refresh' };
+            await setTokens(first);
+            realtime.userId = 'me';
+            const action = typed('group', NotificationType.GROUP_INVITE, 'groupInvite', { groupId: 'g1' });
+            realtime.notifications = [action];
+            const requests = [];
+            const execute = async ({ url, headers }) => {
+                const path = new URL(url).pathname;
+                requests.push([path, headers.Authorization]);
+                if (path === '/api/auth/refresh') {
+                    if (scenario === 'during refresh') await setTokens(second);
+                    return {
+                        status: 200,
+                        data: JSON.stringify({ accessToken: 'refreshed-access', refreshToken: 'rotated-refresh' })
+                    };
+                }
+                if (headers.Authorization === 'Bearer access') {
+                    if (scenario === 'before refresh') await setTokens(second);
+                    return { status: 401, data: '{}' };
+                }
+                return { status: 204, data: '' };
+            };
+            try {
+                const result = respond(action.id, 'nexvr.accept', execute);
+                if (scenario === 'same session') {
+                    expect((await result).status).toBe(200);
+                } else {
+                    await expect(result).rejects.toHaveProperty('name', 'StaleRequestError');
+                    expect(await getAccessToken()).toBe(second.accessToken);
+                }
+                expect(requests).toEqual([
+                    ['/api/groups/g1/accept', 'Bearer access'],
+                    ...(scenario !== 'before refresh' ? [['/api/auth/refresh', undefined]] : []),
+                    ...(scenario === 'same session' ? [['/api/groups/g1/accept', 'Bearer refreshed-access']] : [])
+                ]);
+            } finally {
+                await setTokens(first);
+            }
+        }
+    );
 
     test("an invite is filled in with the world's name and thumbnail", async () => {
         realtime.notifications = [
@@ -231,5 +419,30 @@ describe('NexVR notifications', () => {
         };
         const { json } = await get('auth/user/notifications?n=100&offset=0');
         expect(json).toEqual([]);
+    });
+
+    test('a token-only switch drops a pending notification list and clears the old realtime snapshot', async () => {
+        const original = { accessToken: 'access', refreshToken: 'refresh' };
+        await setTokens(original);
+        realtime.userId = 'me';
+        const old = [notification('old-account', NotificationType.FRIEND_REQUEST, 'someone')];
+        realtime.notifications = old;
+        const pending = Promise.withResolvers();
+        const fetchList = vi.spyOn(realtime, 'getNotifications').mockReturnValueOnce(pending.promise);
+        try {
+            const loginState = watchState.isLoggedIn;
+            const request = get('auth/user/notifications');
+            expect(fetchList).toHaveBeenCalledOnce();
+            await setTokens({ accessToken: 'new-account', refreshToken: 'new-refresh' });
+            expect(watchState.isLoggedIn).toBe(loginState);
+            expect(realtime.notifications).toEqual([]);
+            pending.resolve(old);
+            expect((await request).json).toEqual([]);
+            expect(requested).toEqual([]);
+            expect((await get('auth/user/notifications')).json).toEqual([]);
+        } finally {
+            fetchList.mockRestore();
+            await setTokens(original);
+        }
     });
 });

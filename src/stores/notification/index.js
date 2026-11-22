@@ -36,6 +36,9 @@ import {
 import { database, dbVars } from '../../services/database';
 import { getNotificationCategory, getNotificationTs } from '../../shared/utils/notificationCategory';
 import { AppDebug } from '../../services/appConfig';
+import { getRequestSession } from '../../services/requestSession';
+import { realtime } from '../../services/nexvr/realtime';
+import { toNexVRNotification } from '../../services/nexvr/mappers';
 import { createOverlayDispatch } from './overlayDispatch';
 import { useAdvancedSettingsStore } from '../settings/advanced';
 import { useFavoriteStore } from '../favorite';
@@ -59,7 +62,7 @@ import { watchState } from '../../services/watchState';
 import configRepository from '../../services/config';
 
 export const useNotificationStore = defineStore('Notification', () => {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const generalSettingsStore = useGeneralSettingsStore();
     const locationStore = useLocationStore();
     const favoriteStore = useFavoriteStore();
@@ -94,6 +97,7 @@ export const useNotificationStore = defineStore('Notification', () => {
         }
     });
     const unseenNotifications = ref([]);
+    const pendingNexVRResponses = new Set();
     const isNotificationsLoading = ref(false);
     const isNotificationCenterOpen = ref(false);
     const inventoryBundleDialog = ref({
@@ -145,6 +149,20 @@ export const useNotificationStore = defineStore('Notification', () => {
     const hasUnseenNotifications = computed(() => unseenNotifications.value.length > 0);
 
     const notyMap = {};
+
+    watch(
+        () => locale?.value,
+        () => {
+            const active = new Map(realtime.notifications.map((notification) => [notification.id, notification]));
+            for (const row of notificationTable.value.data) {
+                const source = active.get(row.id);
+                if (!row.$nexvrType || !source?.payload?.case) continue;
+                const { message, responses } = sanitizeNotificationJson(toNexVRNotification(source));
+                row.message = message;
+                if (responses) row.responses = responses;
+            }
+        }
+    );
 
     watch(
         () => watchState.isLoggedIn,
@@ -234,7 +252,7 @@ export const useNotificationStore = defineStore('Notification', () => {
                 queueNotificationNoty(ref);
                 sharedFeedStore.addEntry(ref);
             }
-            if (matchesNotificationTypeFilter && !isExcludedType) {
+            if (matchesNotificationTypeFilter && (!isExcludedType || (ref.$nexvrType && ref.responses?.length))) {
                 uiStore.notifyMenu('notification');
             }
         }
@@ -1343,7 +1361,11 @@ export const useNotificationStore = defineStore('Notification', () => {
      * @param responseType
      */
     function sendNotificationResponse(notificationId, responses, responseType) {
-        if (!Array.isArray(responses) || responses.length === 0) return;
+        if (!Array.isArray(responses) || responses.length === 0 || typeof responseType !== 'string') return;
+        if (responseType.startsWith('nexvr.')) {
+            if (!responses.some((response) => response.type === responseType)) return;
+            return sendNexVRNotificationResponse(notificationId, responseType);
+        }
         let responseData = '';
         for (let i = 0; i < responses.length; i++) {
             if (responses[i].type === responseType) {
@@ -1364,6 +1386,35 @@ export const useNotificationStore = defineStore('Notification', () => {
                 handleNotificationV2Hide(notificationId);
                 notificationRequest.hideNotificationV2(notificationId);
             });
+    }
+
+    /**
+     * @param {string} notificationId
+     * @param {string} responseType
+     */
+    async function sendNexVRNotificationResponse(notificationId, responseType) {
+        const session = getRequestSession();
+        const key = `${session}:${notificationId}`;
+        if (pendingNexVRResponses.has(key)) return;
+        pendingNexVRResponses.add(key);
+        try {
+            const { json } = await notificationRequest.sendNotificationResponse({
+                notificationId,
+                responseType,
+                responseData: ''
+            });
+            if (session === getRequestSession()) {
+                handleNotificationHide(notificationId);
+                handleNotificationSee(notificationId);
+                toast.success(json);
+            }
+        } catch {
+            if (session === getRequestSession()) {
+                toast.error(t('view.notification.actions.response_failed'));
+            }
+        } finally {
+            pendingNexVRResponses.delete(key);
+        }
     }
 
     /**

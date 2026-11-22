@@ -258,6 +258,7 @@
     import { TooltipWrapper } from '@/components/ui/tooltip';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
+    import { canDeclineNotification } from '../../../shared/utils/notificationCategory';
 
     import dayjs from 'dayjs';
 
@@ -315,11 +316,12 @@
 
     const typeLabel = computed(() => {
         const typeKey = `view.notification.filters.${props.notification.type}`;
-        return te(typeKey) ? t(typeKey) : props.notification.type;
+        return te(typeKey) || te(typeKey, 'en') ? t(typeKey) : props.notification.type;
     });
 
     const TYPE_ICON_MAP = {
         friendRequest: UserPlus,
+        friendRequestResponse: UserPlus,
         ignoredFriendRequest: UserPlus,
         invite: Send,
         requestInvite: Send,
@@ -358,27 +360,12 @@
         return dayjs(createdAtValue.value).format('YYYY-MM-DD HH:mm:ss');
     });
 
-    const showDecline = computed(() => {
-        const type = props.notification.type;
-        const link = props.notification.link;
-        return (
-            type !== 'requestInviteResponse' &&
-            type !== 'inviteResponse' &&
-            type !== 'message' &&
-            type !== 'boop' &&
-            type !== 'groupChange' &&
-            !type?.includes('group.') &&
-            !type?.includes('moderation.') &&
-            !type?.includes('instance.') &&
-            !link?.startsWith('economy.')
-        );
-    });
+    const showDecline = computed(() => canDeclineNotification(props.notification));
 
     const hasResponses = computed(() => Array.isArray(props.notification.responses));
 
     const showDeleteLog = computed(() => {
-        const n = props.notification;
-        const type = n.type;
+        const type = props.notification.type;
         if (type === 'friendRequest' || type === 'ignoredFriendRequest') return false;
         return true;
     });
@@ -396,6 +383,7 @@
             'inviteResponse',
             'requestInviteResponse',
             'friendRequest',
+            'friendRequestResponse',
             'ignoredFriendRequest',
             'boop'
         ].includes(type);
